@@ -2,7 +2,13 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#102a56">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Inspeções">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
 <title>Controle de Inspeções de Resíduos</title>
 <style>
 :root{--bg:#f4f7fb;--card:#fff;--primary:#155eef;--primary2:#0f4dcc;--dark:#172033;--muted:#667085;--line:#e4e7ec;--ok:#079455;--warn:#dc6803;--danger:#d92d20;--sidebar:#102a56}
@@ -35,7 +41,7 @@ table{width:100%;border-collapse:collapse;background:white;border-radius:12px;ov
 .uinfo{display:flex;gap:10px;align-items:center}.avatar{width:36px;height:36px;flex:none;border-radius:50%;background:#ffffff1f;display:grid;place-items:center;font-weight:800;font-size:13px}
 .uinfo b{display:block;font-size:14px}.uinfo small{opacity:.72;font-size:12px}
 .ubtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}.ubtns button{background:#ffffff14;color:#dbe7ff;padding:9px;font-size:13px}.ubtns button:hover{background:#ffffff26}
-body.locked>aside,body.locked>header,body.locked>.container{display:none}
+body.locked>aside,body.locked>header,body.locked>.container,body.locked>.bottom-nav,body.locked>.menu-overlay{display:none!important}
 #auth{display:none;position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,#102a56,#155eef);align-items:center;justify-content:center;padding:20px}body.locked #auth{display:flex}
 .auth-card{background:#fff;border-radius:16px;padding:30px;width:100%;max-width:380px;box-shadow:0 20px 50px #10182840}
 .auth-card h2{margin:10px 0 4px;font-size:21px}.auth-card label{margin-top:14px}.auth-card>button{width:100%;margin-top:18px;padding:13px}.auth-brand{font-size:34px}
@@ -72,6 +78,78 @@ th.c,td.c{text-align:center}td.c input{width:18px;height:18px;cursor:pointer}tr.
 .titulo-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:15px}.titulo-linha .title{margin:0}
 .marcar-todos{display:flex;align-items:center;gap:8px;margin:0;padding:8px 14px;border-radius:8px;background:#eef4ff;color:#155eef;cursor:pointer;user-select:none}
 .marcar-todos input{width:18px;height:18px;margin:0;cursor:pointer}
+
+/* ================= CELULAR / TABLET ================= */
+.menu-btn,.bottom-nav,.menu-overlay{display:none}
+@media(max-width:900px){
+  body{-webkit-tap-highlight-color:transparent}
+  /* barra superior */
+  header{position:fixed;left:0;right:0;top:0;height:auto;min-height:58px;display:flex;align-items:center;gap:10px;padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top));z-index:30}
+  header>div{flex:1;min-width:0}
+  header h1{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header p{display:none}
+  #btnNovaHeader{display:none!important}
+  .menu-btn{display:grid;place-items:center;flex:none;width:42px;height:42px;padding:0;border-radius:10px;background:#ffffff1f;color:#fff;font-size:21px}
+  /* menu lateral vira gaveta */
+  .sidebar{position:fixed;top:0;bottom:0;left:0;width:280px;max-width:85vw;height:auto;transform:translateX(-105%);transition:transform .25s ease;z-index:60;padding-top:calc(22px + env(safe-area-inset-top));padding-bottom:calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+  .nav{display:flex;flex-direction:column}
+  .tab{padding:14px}
+  body.menu-aberto .sidebar{transform:none}
+  .menu-overlay{position:fixed;inset:0;background:#10182880;z-index:55}
+  body.menu-aberto .menu-overlay{display:block}
+  /* conteúdo */
+  .container{margin-left:0;padding:calc(72px + env(safe-area-inset-top)) 12px calc(88px + env(safe-area-inset-bottom))}
+  .card{padding:14px;border-radius:12px}
+  .title{font-size:16px}
+  .row,.row3,.row4,.check-grid,.grid,.dash-filtros{grid-template-columns:1fr!important}
+  input,select,textarea{font-size:16px}
+  button{min-height:44px}
+  .actions button,.filter-actions button{flex:1}
+  .filter-actions{flex-wrap:wrap}
+  .check{padding:12px}.check label{display:flex;align-items:center;margin:0;min-height:24px}.check input{width:22px;height:22px;flex:none}
+  .titulo-linha{flex-direction:column;align-items:stretch}.marcar-todos{justify-content:center;min-height:44px}
+  /* indicadores */
+  #kpiGrid{grid-template-columns:repeat(2,1fr)!important;gap:10px}
+  #kpiGrid .kpi:last-child{grid-column:1/-1}
+  .kpi{padding:12px;gap:10px}.kpi .ico{width:40px;height:40px;border-radius:10px}.kpi svg{width:22px;height:22px}.kpi b{font-size:22px}.kpi .muted{font-size:12px;line-height:1.2;display:block}
+  .dash-head .muted{display:none}
+  .dash-rodape .botoes,.dash-rodape .botoes button{width:100%}
+  .campo-busca{max-width:none!important}
+  /* barra inferior */
+  .bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);box-shadow:0 -4px 16px #1018280f;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .bn{flex:1;background:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;font-size:11px;font-weight:700;min-height:52px;border-radius:10px}
+  .bn svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .bn.active{color:var(--primary)}
+  .bn-nova{flex:none;width:58px;height:58px;min-height:58px;margin-top:-22px;border-radius:50%;background:var(--primary);color:#fff;font-size:28px;font-weight:400;line-height:1;box-shadow:0 6px 16px #155eef55;align-self:center;padding:0}
+  .bn-nova.active{background:var(--primary2);color:#fff}
+  .modal-card,.auth-card{max-height:90vh;overflow-y:auto}
+}
+/* filtros recolhíveis e indicadores só no painel (celular) */
+.btn-filtros{display:none}
+@media(max-width:900px){
+  .btn-filtros{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+  .filtravel:not(.aberto) .f-extra{display:none}
+  .filtravel .f-mobile-row{display:flex;gap:8px;align-items:end}.filtravel .f-mobile-row>div{flex:1}
+  body:not([data-sec="dashboard"]) #kpiGrid{display:none}
+}
+/* tabelas viram cartões no celular */
+@media(max-width:700px){
+  .container table,.container thead,.container tbody,.container tr,.container td{display:block;width:100%}
+  .container table{background:transparent;border-radius:0;overflow:visible}
+  .container thead{display:none}
+  .container tr{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;padding:4px 12px;box-shadow:0 2px 8px #1018280a}
+  .container td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;border-bottom:1px dashed var(--line);padding:9px 0;text-align:right;white-space:normal;font-size:14px}
+  .container td:last-child{border-bottom:0}
+  .container td::before{content:attr(data-label);font-weight:700;color:var(--muted);font-size:12px;text-align:left;flex:none;max-width:45%}
+  .container td[data-label=""]::before{display:none}
+  .container td.td-acoes{justify-content:stretch;flex-wrap:wrap;gap:8px;padding-top:10px}
+  .container td.td-acoes::before{display:none}
+  .container td.td-acoes button{flex:1}
+  .container td .chips{justify-content:flex-end}
+  .container tr.grp{background:none;border:0;box-shadow:none;padding:0;margin:16px 0 4px}
+  .container tr.grp td{justify-content:flex-start;font-size:13px;background:none;padding:0}
+  .container .empty{background:#fff;border-radius:12px}
+}
 </style>
 </head>
 <body class="locked">
@@ -100,6 +178,7 @@ th.c,td.c{text-align:center}td.c input{width:18px;height:18px;cursor:pointer}tr.
   </div>
 </div>
 
+<div class="menu-overlay" onclick="toggleMenu(false)"></div>
 <aside class="sidebar">
   <div class="brand">
     <h2>🛡️ Controle de Inspeções</h2>
@@ -121,9 +200,18 @@ th.c,td.c{text-align:center}td.c input{width:18px;height:18px;cursor:pointer}tr.
 </aside>
 
 <header>
+  <button class="menu-btn" onclick="toggleMenu()" aria-label="Abrir menu">☰</button>
   <div><h1>Controle de Inspeções de Resíduos</h1><p>Inspeção visual • radiação • temperatura de cargas de caminhão</p></div>
   <button class="secondary" id="btnNovaHeader" onclick="abrir('inspecao')">＋ Nova inspeção</button>
 </header>
+
+<nav class="bottom-nav" id="bottomNav">
+  <button class="bn" data-sec="dashboard" onclick="abrir('dashboard')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Painel</button>
+  <button class="bn" data-sec="historico" onclick="abrir('historico')"><svg viewBox="0 0 24 24"><path d="M9 3h6v3H9z"/><path d="M9 4.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5.5a1 1 0 0 0-1-1h-3"/><path d="M9 11h6M9 15h6"/></svg>Histórico</button>
+  <button class="bn bn-nova" data-sec="inspecao" onclick="abrir('inspecao')" aria-label="Nova inspeção">＋</button>
+  <button class="bn" data-sec="veiculos" onclick="abrir('veiculos')"><svg viewBox="0 0 24 24"><path d="M2 5h12v11H2z"/><path d="M14 9h4l3.5 3.5V16H14"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>Veículos</button>
+  <button class="bn" onclick="toggleMenu()"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Menu</button>
+</nav>
 
 <div class="container">
   <div class="grid" id="kpiGrid">
@@ -147,16 +235,16 @@ th.c,td.c{text-align:center}td.c input{width:18px;height:18px;cursor:pointer}tr.
   <section id="dashboard" class="section active">
     <div class="card" style="margin-top:22px">
       <div class="dash-head"><h2 class="title">Resumo das últimas inspeções</h2><span class="muted">Os indicadores acima acompanham o período e a empresa escolhidos.</span></div>
-      <div class="dash-filtros">
+      <div class="dash-filtros filtravel" id="filtrosDash">
         <div><label>Pesquisar</label><div class="campo-busca"><svg class="pict" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="dBusca" oninput="renderDash()" placeholder="Placa, motorista, empresa, resíduo, NF..."></div></div>
-        <div><label>Status</label><select id="dStatus" onchange="renderDash()">
+        <div class="f-extra"><label>Status</label><select id="dStatus" onchange="renderDash()">
           <option value="">Todos</option><option value="Liberado">✅ Liberado</option><option value="Liberado com observação">⚠️ Liberado com observação</option>
           <option value="Em espera">🕒 Em espera</option><option value="Não liberado">🚨 Não liberado</option><option value="Bloqueada para análise">⛔ Bloqueada para análise</option>
           <option value="__nl">🚫 Não liberado + bloqueada</option></select></div>
-        <div><label>Período</label><select id="dPeriodo" onchange="renderDash()">
+        <div class="f-extra"><label>Período</label><select id="dPeriodo" onchange="renderDash()">
           <option value="">Todo o período</option><option value="hoje">Hoje</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option><option value="mes">Este mês</option></select></div>
-        <div><label>Empresa</label><select id="dEmpresa" onchange="renderDash()"><option value="">Todas</option></select></div>
-        <div><button class="secondary" onclick="limparFiltrosDash()">↺ Limpar</button></div>
+        <div class="f-extra"><label>Empresa</label><select id="dEmpresa" onchange="renderDash()"><option value="">Todas</option></select></div>
+        <div class="filter-actions"><button class="secondary btn-filtros" id="btnFiltrosDash" onclick="alternarFiltros('filtrosDash')">⚙️ Mais filtros</button><button class="secondary" onclick="limparFiltrosDash()">↺ Limpar</button></div>
       </div>
       <div id="dashTabela"></div>
       <div class="dash-rodape"><span class="muted" id="dashInfo"></span><div class="botoes"><button class="pdf btnPdf" onclick="gerarPDF('dash',this)">📄 Gerar PDF</button><button class="secondary" id="btnVerHistorico" onclick="abrir('historico')">📋 Ver tudo no histórico</button></div></div>
@@ -170,7 +258,7 @@ th.c,td.c{text-align:center}td.c input{width:18px;height:18px;cursor:pointer}tr.
         <div><label>Data e hora</label><input id="iData" type="datetime-local"></div>
         <div><label>Empresa / gerador</label><select id="iEmpresa"></select></div>
         <div><label>Resíduo</label><select id="iResiduo" onchange="mostrarToleranciaResiduo()"></select></div>
-        <div><label>Placa do caminhão</label><input id="iPlaca" placeholder="ABC-1234" list="listaPlacas" autocomplete="off"><datalist id="listaPlacas"></datalist></div>
+        <div><label>Placa do caminhão</label><input id="iPlaca" placeholder="ABC-1234" autocapitalize="characters" autocorrect="off" spellcheck="false" list="listaPlacas" autocomplete="off"><datalist id="listaPlacas"></datalist></div>
         <div><label>Motorista</label><input id="iMotorista" list="listaMotPlaca" autocomplete="off"><datalist id="listaMotPlaca"></datalist></div>
         <div><label>NF / MTR / documento</label><input id="iDoc"></div>
       </div>
@@ -241,18 +329,18 @@ th.c,td.c{text-align:center}td.c input{width:18px;height:18px;cursor:pointer}tr.
   </section>
 
   <section id="historico" class="section">
-    <div class="card filter-card">
-      <h2 class="title">Pesquisa e filtros</h2>
+    <div class="card filter-card filtravel" id="filtrosHist">
+      <div class="titulo-linha"><h2 class="title">Pesquisa e filtros</h2><button class="secondary btn-filtros" id="btnFiltrosHist" onclick="alternarFiltros('filtrosHist')">⚙️ Mais filtros</button></div>
       <div class="row4">
         <div><label>Pesquisar</label><input id="busca" oninput="render()" placeholder="Empresa, placa, resíduo, documento..."></div>
-        <div><label>Status</label><select id="fStatus" onchange="render()"><option value="">Todos</option><option>Liberado</option><option>Liberado com observação</option><option>Em espera</option><option>Não liberado</option><option>Bloqueada para análise</option></select></div>
-        <div><label>Empresa</label><select id="fEmpresa" onchange="render()"><option value="">Todas</option></select></div>
-        <div><label>Resíduo</label><select id="fResiduo" onchange="render()"><option value="">Todos</option></select></div>
+        <div class="f-extra"><label>Status</label><select id="fStatus" onchange="render()"><option value="">Todos</option><option>Liberado</option><option>Liberado com observação</option><option>Em espera</option><option>Não liberado</option><option>Bloqueada para análise</option></select></div>
+        <div class="f-extra"><label>Empresa</label><select id="fEmpresa" onchange="render()"><option value="">Todas</option></select></div>
+        <div class="f-extra"><label>Resíduo</label><select id="fResiduo" onchange="render()"><option value="">Todos</option></select></div>
       </div>
       <div class="row4" style="margin-top:12px">
-        <div><label>Data inicial</label><input id="fDataIni" type="date" onchange="render()"></div>
-        <div><label>Data final</label><input id="fDataFim" type="date" onchange="render()"></div>
-        <div><label>Placa</label><input id="fPlaca" oninput="render()" placeholder="ABC-1234"></div>
+        <div class="f-extra"><label>Data inicial</label><input id="fDataIni" type="date" onchange="render()"></div>
+        <div class="f-extra"><label>Data final</label><input id="fDataFim" type="date" onchange="render()"></div>
+        <div class="f-extra"><label>Placa</label><input id="fPlaca" autocapitalize="characters" oninput="render()" placeholder="ABC-1234"></div>
         <div class="filter-actions"><button class="secondary" onclick="limparFiltros()">↺ Limpar filtros</button><button class="pdf btnPdf" onclick="gerarPDF('hist',this)">📄 Gerar PDF</button></div>
       </div>
     </div>
@@ -270,7 +358,7 @@ th.c,td.c{text-align:center}td.c input{width:18px;height:18px;cursor:pointer}tr.
   <section id="veiculos" class="section">
     <div class="card form-card" id="formVeiculo"><h2 class="title" id="veiTitulo">Cadastrar veículo</h2>
       <div class="row4">
-        <div><label>Placa</label><input id="veiPlaca" placeholder="ABC-1234 ou ABC1D23" maxlength="8" autocomplete="off"></div>
+        <div><label>Placa</label><input id="veiPlaca" placeholder="ABC-1234 ou ABC1D23" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="8" autocomplete="off"></div>
         <div><label>Tipo de veículo</label><select id="veiTipo"><option value="">Não informado</option><option>Caminhão toco</option><option>Caminhão truck</option><option>Carreta</option><option>Bitrem</option><option>Caminhão caçamba</option><option>Caminhão tanque</option><option>Roll-on/roll-off</option><option>Utilitário</option></select></div>
         <div><label>Transportadora</label><input id="veiTransp"></div>
       </div>
@@ -434,7 +522,7 @@ function aplicarPermissoes(){
   if(!atual)return;
   uNome.textContent=atual.nome;uPerfil.textContent=PERFIS[atual.perfil];
   uAvatar.textContent=atual.nome.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
-  document.querySelectorAll('.tab').forEach(t=>{const sec=t.dataset.sec;t.style.display=(sec==='inspecao'?pode('inspecao_criar'):podeSecao(sec))?'':'none'});
+  document.querySelectorAll('.tab,.bn[data-sec]').forEach(t=>{const sec=t.dataset.sec;t.style.display=(sec==='inspecao'?pode('inspecao_criar'):podeSecao(sec))?'':'none'});
   btnNovaHeader.style.display=pode('inspecao_criar')?'':'none';
   kpiGrid.style.display=pode('dashboard')?'':'none';
   formEmpresa.style.display=pode('empresas_cadastrar')?'':'none';
@@ -545,6 +633,8 @@ function abrir(id,el){
   document.getElementById(id).classList.add('active');
   const tab=el||document.querySelector(`.tab[data-sec="${id}"]`);
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));if(tab)tab.classList.add('active');
+  document.querySelectorAll('.bn[data-sec]').forEach(b=>b.classList.toggle('active',b.dataset.sec===id));
+  document.body.dataset.sec=id;toggleMenu(false);if(window.innerWidth<=900)window.scrollTo(0,0);
   if(id==='usuarios') renderUsuarios();
   if(id==='veiculos') renderVeiculos();
   if(id==='inspecao') preencherSelects();
@@ -675,6 +765,7 @@ function excluirInspecao(id){if(!pode('inspecao_excluir'))return alert(SEM_PERMI
 const ICONE_STATUS={'Liberado':'✅','Liberado com observação':'⚠️','Em espera':'🕒','Não liberado':'🚨','Bloqueada para análise':'⛔'};
 function badge(s){let c=s==='Liberado'?'ok':s==='Em espera'?'warn':s==='Liberado com observação'?'info':'bad';return `<span class="badge ${c}">${ICONE_STATUS[s]||''} ${esc(s)}</span>`}
 function render(){
+  atualizarBtnFiltros();
   const q=(busca.value||'').toLowerCase().trim(),fs=fStatus.value,fe=fEmpresa.value,fr=fResiduo.value,fi=fDataIni.value,ff=fDataFim.value,fp=(fPlaca.value||'').toLowerCase().trim();
   let arr=listaHist=db.inspecoes.filter(x=>{
     const d=(x.data||'').slice(0,10);
@@ -698,6 +789,7 @@ function noPeriodo(x,per){
 }
 function statusConfere(x,st){return !st||(st==='__nl'?(x.status==='Não liberado'||x.status==='Bloqueada para análise'):x.status===st)}
 function renderDash(){
+  atualizarBtnFiltros();
   const q=(dBusca.value||'').toLowerCase().trim(),st=dStatus.value,per=dPeriodo.value,emp=dEmpresa.value;
   const base=db.inspecoes.filter(x=>noPeriodo(x,per)&&(!emp||x.empresa===emp));
   kInspecoes.textContent=base.length;
@@ -815,6 +907,34 @@ function limparFiltrosDash(){dBusca.value='';dStatus.value='';dPeriodo.value='';
 function limparFiltros(){busca.value='';fStatus.value='';fEmpresa.value='';fResiduo.value='';fDataIni.value='';fDataFim.value='';fPlaca.value='';render()}
 iStatus.addEventListener('change',()=>{releaseBox.classList.toggle('show',(iStatus.value==='Em espera'||!!editandoId)&&pode('inspecao_liberar'));});
 iResiduo.addEventListener('change',mostrarToleranciaResiduo);
+/* ================= CELULAR ================= */
+function alternarFiltros(id){document.getElementById(id).classList.toggle('aberto');atualizarBtnFiltros()}
+function atualizarBtnFiltros(){
+  if(typeof btnFiltrosHist==='undefined')return;
+  const nh=[fStatus,fEmpresa,fResiduo,fDataIni,fDataFim,fPlaca].filter(e=>e.value).length,nd=[dStatus,dPeriodo,dEmpresa].filter(e=>e.value).length;
+  const txt=(id,n)=>(document.getElementById(id).classList.contains('aberto')?'▴ Menos filtros':'⚙️ Mais filtros')+(n?` (${n})`:'');
+  btnFiltrosHist.textContent=txt('filtrosHist',nh);btnFiltrosDash.textContent=txt('filtrosDash',nd);
+}
+function toggleMenu(abrirMenu){
+  const b=document.body,abre=abrirMenu===undefined?!b.classList.contains('menu-aberto'):abrirMenu;
+  b.classList.toggle('menu-aberto',abre);
+}
+// Copia o título de cada coluna para as células (usado no modo cartão do celular)
+function rotularTabelas(raiz){
+  (raiz||document).querySelectorAll('.container table').forEach(t=>{
+    const cab=[...t.querySelectorAll('thead th')].map(th=>th.textContent.trim());
+    t.querySelectorAll('tbody tr').forEach(tr=>{
+      if(tr.classList.contains('grp'))return;
+      [...tr.children].forEach((td,i)=>{
+        const l=cab[i]||'';td.dataset.label=l;
+        td.classList.toggle('td-acoes',!l||l==='Ações'||l==='Ação');
+      });
+    });
+  });
+}
+new MutationObserver(()=>rotularTabelas()).observe(document.querySelector('.container'),{childList:true,subtree:true});
+window.addEventListener('resize',()=>{if(window.innerWidth>900)toggleMenu(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')toggleMenu(false)});
 /* Inspeção visual: selecionar todos */
 const CHECKS_VISUAL=['vIntegridade','vIdentificacao','vOdor','vEmbalagem','vEstranho','vVazamento'];
 function marcarTodosVisual(v){CHECKS_VISUAL.forEach(id=>document.getElementById(id).checked=v);sincronizarTodosVisual()}
@@ -842,7 +962,7 @@ function temMotorista(v,nome){const n=nome.trim().toLowerCase();return nomesMot(
 /* Formulário com vários motoristas */
 function addLinhaMotorista(nome='',fone='',foco=true){
   const d=document.createElement('div');d.className='mot-linha';
-  d.innerHTML=`<input class="mNome" list="listaMotoristas" placeholder="Nome do motorista" autocomplete="off"><input class="mFone fone" placeholder="Telefone (opcional)"><button class="danger" title="Remover motorista" onclick="removerLinhaMotorista(this)">✕</button>`;
+  d.innerHTML=`<input class="mNome" list="listaMotoristas" placeholder="Nome do motorista" autocomplete="off"><input class="mFone fone" type="tel" inputmode="tel" placeholder="Telefone (opcional)"><button class="danger" title="Remover motorista" onclick="removerLinhaMotorista(this)">✕</button>`;
   d.querySelector('.mNome').value=nome;d.querySelector('.mFone').value=fone;
   veiMotoristas.appendChild(d);if(foco)d.querySelector('.mNome').focus();
 }
