@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Inspeções de Resíduos</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--primary:#155eef;--primary2:#0f4dcc;--dark:#172033;--muted:#667085;--line:#e4e7ec;--ok:#079455;--warn:#dc6803;--danger:#d92d20;--sidebar:#102a56}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--dark)}
+header{position:fixed;left:240px;right:0;top:0;height:88px;z-index:10;background:linear-gradient(135deg,#102a56,#155eef);color:white;padding:18px 28px;display:flex;justify-content:space-between;align-items:center}
+header h1{margin:0;font-size:23px}header p{margin:5px 0 0;opacity:.85}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--sidebar);color:white;padding:22px 14px;z-index:20;box-shadow:4px 0 18px #10182820}
+.brand{padding:4px 10px 24px;border-bottom:1px solid #ffffff22;margin-bottom:16px}.brand h2{font-size:18px;margin:0 0 6px}.brand small{opacity:.72;line-height:1.4}
+.nav{display:flex;flex-direction:column;gap:7px}.tab{border:0;background:transparent;color:#dbe7ff;padding:12px 14px;border-radius:9px;cursor:pointer;font-weight:700;text-align:left;font-size:14px}.tab:hover{background:#ffffff12}.tab.active{background:var(--primary);color:#fff}
+.container{margin-left:240px;padding:112px 24px 30px;max-width:1600px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 3px 12px #1018280a}
+.kpi b{display:block;font-size:28px;margin-top:7px}.muted{color:var(--muted);font-size:13px}
+.section{display:none}.section.active{display:block}.row{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.row3{grid-template-columns:repeat(3,1fr)}.row4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+label{font-size:13px;font-weight:600;margin-bottom:6px;display:block}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid #d0d5dd;border-radius:8px;background:white;font:inherit}textarea{min-height:90px}
+button{border:0;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:700}.primary{background:var(--primary);color:white}.primary:hover{background:var(--primary2)}.secondary{background:#eef4ff;color:#155eef}.danger{background:#fee4e2;color:#b42318}.warning{background:#fff4e5;color:#b54708}.actions{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+.form-card{margin-bottom:16px}.title{font-size:18px;font-weight:800;margin:0 0 15px}
+.badge{display:inline-block;padding:5px 9px;border-radius:20px;font-size:12px;font-weight:700}.ok{background:#ecfdf3;color:#027a48}.warn{background:#fffaeb;color:#b54708}.bad{background:#fef3f2;color:#b42318}.info{background:#eff8ff;color:#175cd3}
+table{width:100%;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden}th,td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:middle}th{background:#f8fafc;white-space:nowrap}
+.empty{text-align:center;padding:35px;color:var(--muted)}.check-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.check{border:1px solid var(--line);padding:14px;border-radius:10px}.check input{width:auto;margin-right:7px}
+.filter-card{margin-bottom:14px}.filter-actions{display:flex;align-items:end;gap:8px}.filter-actions button{height:42px}.notice{display:none;margin-top:12px;padding:13px 15px;border-radius:10px;background:#fff4e5;color:#8a4b00;border:1px solid #f5c97b;font-size:13px;line-height:1.45}.notice.show{display:block}.release-box{display:none;margin-top:12px;padding:13px;border-radius:10px;background:#eff8ff;border:1px solid #b2ddff}.release-box.show{display:block}.release-box label{margin:0;display:flex;gap:8px;align-items:center}.release-box input{width:auto}
+.small{font-size:12px}.nowrap{white-space:nowrap}
+@media(max-width:1100px){.grid,.row4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){.sidebar{width:190px}header{left:190px}.container{margin-left:190px}.row,.row3,.check-grid{grid-template-columns:1fr}.grid,.row4{grid-template-columns:1fr}}
+@media(max-width:600px){.sidebar{position:relative;width:100%;height:auto}.nav{display:grid;grid-template-columns:repeat(2,1fr)}header{position:relative;left:0;height:auto;display:block}.container{margin-left:0;padding:20px 10px}.grid{grid-template-columns:1fr}.row,.row3,.row4,.check-grid{grid-template-columns:1fr}}
+/* ===== Acesso / usuários ===== */
+.sidebar{display:flex;flex-direction:column}
+.userbox{margin-top:auto;border-top:1px solid #ffffff22;padding:16px 6px 0}
+.uinfo{display:flex;gap:10px;align-items:center}.avatar{width:36px;height:36px;flex:none;border-radius:50%;background:#ffffff1f;display:grid;place-items:center;font-weight:800;font-size:13px}
+.uinfo b{display:block;font-size:14px}.uinfo small{opacity:.72;font-size:12px}
+.ubtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}.ubtns button{background:#ffffff14;color:#dbe7ff;padding:9px;font-size:13px}.ubtns button:hover{background:#ffffff26}
+body.locked>aside,body.locked>header,body.locked>.container{display:none}
+#auth{display:none;position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,#102a56,#155eef);align-items:center;justify-content:center;padding:20px}body.locked #auth{display:flex}
+.auth-card{background:#fff;border-radius:16px;padding:30px;width:100%;max-width:380px;box-shadow:0 20px 50px #10182840}
+.auth-card h2{margin:10px 0 4px;font-size:21px}.auth-card label{margin-top:14px}.auth-card>button{width:100%;margin-top:18px;padding:13px}.auth-brand{font-size:34px}
+.auth-erro{color:#b42318;font-size:13px;margin-top:10px}.auth-erro:empty{display:none}
+.modal{display:none;position:fixed;inset:0;background:#10182880;z-index:90;align-items:center;justify-content:center;padding:20px}.modal.show{display:flex}
+.modal-card{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:400px}.modal-card label{margin-top:12px}
+.role-admin{background:#f4ebff;color:#6941c6}.role-master{background:#eff8ff;color:#175cd3}.role-usuario{background:#f2f4f7;color:#344054}
+th.c,td.c{text-align:center}td.c input{width:18px;height:18px;cursor:pointer}tr.grp td{background:#f8fafc;font-weight:800;font-size:12px;color:var(--muted)}
+/* ===== Painel com pictogramas e filtros ===== */
+#kpiGrid{grid-template-columns:repeat(5,1fr)}
+.kpi{display:flex;gap:14px;align-items:center}.kpi b{margin-top:2px}
+.kpi .ico{width:50px;height:50px;border-radius:13px;display:grid;place-items:center;flex:none}
+.kpi svg,.pict{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.kpi svg{width:27px;height:27px}
+.ico.azul{background:#eff4ff;color:#155eef}.ico.verde{background:#ecfdf3;color:#079455}.ico.ambar{background:#fffaeb;color:#dc6803}.ico.vermelho{background:#fef3f2;color:#d92d20}.ico.cinza{background:#f2f4f7;color:#475467}
+.kpi.click{cursor:pointer;transition:border-color .15s}.kpi.click:hover{border-color:#b2ccff}.kpi.sel{border-color:var(--primary);box-shadow:0 0 0 3px #155eef22}
+.dash-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.dash-filtros{display:grid;grid-template-columns:2fr 1.2fr 1fr 1.4fr auto;gap:10px;align-items:end;margin-bottom:16px;padding:14px;border-radius:12px;background:#f8fafc;border:1px solid var(--line)}
+.dash-filtros button{height:42px;white-space:nowrap}
+.campo-busca{position:relative}.campo-busca .pict{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);pointer-events:none}.campo-busca input{padding-left:36px}
+.dash-rodape{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px;flex-wrap:wrap}
+@media(max-width:1300px){#kpiGrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1100px){.dash-filtros{grid-template-columns:1fr 1fr}#kpiGrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.dash-filtros,#kpiGrid{grid-template-columns:1fr}}
+.pdf{background:#fef3f2;color:#b42318}.pdf:hover{background:#fee4e2}.pdf:disabled{opacity:.6;cursor:wait}
+.dash-rodape .botoes{display:flex;gap:8px;flex-wrap:wrap}
+.notice.info-box{background:#eff8ff;color:#175cd3;border-color:#b2ddff}.notice button{padding:6px 10px;font-size:12px;margin-left:6px}
+.placa{display:inline-block;font-weight:800;letter-spacing:.5px;border:2px solid #172033;border-top:5px solid #155eef;border-radius:5px;padding:1px 7px;background:#fff;font-size:12px}
+.mot-lista{display:flex;flex-direction:column;gap:8px}
+.mot-linha{display:grid;grid-template-columns:1.6fr 1fr auto;gap:8px;align-items:center}
+.mot-linha button{padding:10px 13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{display:inline-flex;align-items:center;gap:5px;background:#f2f4f7;border-radius:20px;padding:4px 10px;font-size:12px}.chip small{color:var(--muted)}
+.notice .escolha{margin:8px 6px 0 0}.notice .escolha.sel{background:var(--primary);color:#fff}
+@media(max-width:600px){.mot-linha{grid-template-columns:1fr auto}.mot-linha .fone{grid-column:1}}
+.titulo-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:15px}.titulo-linha .title{margin:0}
+.marcar-todos{display:flex;align-items:center;gap:8px;margin:0;padding:8px 14px;border-radius:8px;background:#eef4ff;color:#155eef;cursor:pointer;user-select:none}
+.marcar-todos input{width:18px;height:18px;margin:0;cursor:pointer}
+</style>
+</head>
+<body class="locked">
+<div id="auth">
+  <div class="auth-card">
+    <div class="auth-brand">🛡️</div>
+    <h2 id="authTitulo">Controle de Inspeções</h2>
+    <p class="muted" id="authSub" style="margin:0">Entre com seu usuário e senha</p>
+    <div id="authSetup" style="display:none"><label>Nome completo</label><input id="aNome"></div>
+    <label>Usuário</label><input id="aLogin" autocomplete="username" autocapitalize="none">
+    <label>Senha</label><input id="aSenha" type="password" autocomplete="current-password">
+    <div id="authSetup2" style="display:none"><label>Confirmar senha</label><input id="aSenha2" type="password"></div>
+    <div id="authErro" class="auth-erro"></div>
+    <button class="primary" id="authBtn" onclick="enviarAuth()">Entrar</button>
+  </div>
+</div>
+
+<div id="modalSenha" class="modal">
+  <div class="modal-card">
+    <h2 class="title" id="mTitulo">Alterar senha</h2>
+    <div id="mAtualBox"><label>Senha atual</label><input id="mAtual" type="password"></div>
+    <label>Nova senha</label><input id="mNova" type="password" autocomplete="new-password">
+    <label>Confirmar nova senha</label><input id="mConf" type="password" autocomplete="new-password">
+    <div id="mErro" class="auth-erro"></div>
+    <div class="actions"><button class="primary" onclick="confirmarSenha()">💾 Salvar senha</button><button class="secondary" onclick="fecharModal()">Cancelar</button></div>
+  </div>
+</div>
+
+<aside class="sidebar">
+  <div class="brand">
+    <h2>🛡️ Controle de Inspeções</h2>
+    <small>Gestão de cargas, resíduos e liberações</small>
+  </div>
+  <nav class="nav">
+    <button class="tab active" data-sec="dashboard" onclick="abrir('dashboard',this)">📊 Dashboard</button>
+    <button class="tab" data-sec="inspecao" onclick="abrir('inspecao',this)">🔎 Nova inspeção</button>
+    <button class="tab" data-sec="historico" onclick="abrir('historico',this)">📋 Histórico</button>
+    <button class="tab" data-sec="empresas" onclick="abrir('empresas',this)">🏢 Empresas</button>
+    <button class="tab" data-sec="veiculos" onclick="abrir('veiculos',this)">🚛 Veículos e motoristas</button>
+    <button class="tab" data-sec="residuos" onclick="abrir('residuos',this)">♻️ Resíduos</button>
+    <button class="tab" data-sec="usuarios" onclick="abrir('usuarios',this)">👥 Usuários e acessos</button>
+  </nav>
+  <div class="userbox">
+    <div class="uinfo"><div class="avatar" id="uAvatar"></div><div><b id="uNome"></b><small id="uPerfil"></small></div></div>
+    <div class="ubtns"><button onclick="abrirModalSenha()">🔑 Senha</button><button onclick="sair()">⏻ Sair</button></div>
+  </div>
+</aside>
+
+<header>
+  <div><h1>Controle de Inspeções de Resíduos</h1><p>Inspeção visual • radiação • temperatura de cargas de caminhão</p></div>
+  <button class="secondary" id="btnNovaHeader" onclick="abrir('inspecao')">＋ Nova inspeção</button>
+</header>
+
+<div class="container">
+  <div class="grid" id="kpiGrid">
+    <div class="card kpi click" data-kpi="" onclick="filtrarKpi('')" title="Mostrar todas">
+      <div class="ico azul"><svg viewBox="0 0 24 24"><path d="M9 3h6v3H9z"/><path d="M9 4.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5.5a1 1 0 0 0-1-1h-3"/><path d="m9 14 2 2 4-4"/></svg></div>
+      <div><span class="muted">Inspeções realizadas</span><b id="kInspecoes">0</b></div></div>
+    <div class="card kpi click" data-kpi="Liberado" onclick="filtrarKpi('Liberado')" title="Filtrar cargas liberadas">
+      <div class="ico verde"><svg viewBox="0 0 24 24"><path d="M2 5h12v11H2z"/><path d="M14 9h4l3.5 3.5V16H14"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><path d="m5 10.5 2 2 3.5-3.5"/></svg></div>
+      <div><span class="muted">Cargas liberadas</span><b id="kLiberados">0</b></div></div>
+    <div class="card kpi click" data-kpi="Em espera" onclick="filtrarKpi('Em espera')" title="Filtrar cargas em espera">
+      <div class="ico ambar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+      <div><span class="muted">Cargas em espera</span><b id="kEspera">0</b></div></div>
+    <div class="card kpi click" data-kpi="__nl" onclick="filtrarKpi('__nl')" title="Filtrar cargas não liberadas e bloqueadas">
+      <div class="ico vermelho"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></svg></div>
+      <div><span class="muted">Não liberadas / bloqueadas</span><b id="kNaoLib">0</b></div></div>
+    <div class="card kpi click" onclick="if(podeSecao('empresas'))abrir('empresas')" title="Ver empresas">
+      <div class="ico cinza"><svg viewBox="0 0 24 24"><path d="M4 21V4.5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1V21"/><path d="M15 9.5h4a1 1 0 0 1 1 1V21"/><path d="M2.5 21h19"/><path d="M8 8h3M8 12h3M8 16h3"/></svg></div>
+      <div><span class="muted">Empresas cadastradas</span><b id="kEmpresas">0</b></div></div>
+  </div>
+
+  <section id="dashboard" class="section active">
+    <div class="card" style="margin-top:22px">
+      <div class="dash-head"><h2 class="title">Resumo das últimas inspeções</h2><span class="muted">Os indicadores acima acompanham o período e a empresa escolhidos.</span></div>
+      <div class="dash-filtros">
+        <div><label>Pesquisar</label><div class="campo-busca"><svg class="pict" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="dBusca" oninput="renderDash()" placeholder="Placa, motorista, empresa, resíduo, NF..."></div></div>
+        <div><label>Status</label><select id="dStatus" onchange="renderDash()">
+          <option value="">Todos</option><option value="Liberado">✅ Liberado</option><option value="Liberado com observação">⚠️ Liberado com observação</option>
+          <option value="Em espera">🕒 Em espera</option><option value="Não liberado">🚨 Não liberado</option><option value="Bloqueada para análise">⛔ Bloqueada para análise</option>
+          <option value="__nl">🚫 Não liberado + bloqueada</option></select></div>
+        <div><label>Período</label><select id="dPeriodo" onchange="renderDash()">
+          <option value="">Todo o período</option><option value="hoje">Hoje</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option><option value="mes">Este mês</option></select></div>
+        <div><label>Empresa</label><select id="dEmpresa" onchange="renderDash()"><option value="">Todas</option></select></div>
+        <div><button class="secondary" onclick="limparFiltrosDash()">↺ Limpar</button></div>
+      </div>
+      <div id="dashTabela"></div>
+      <div class="dash-rodape"><span class="muted" id="dashInfo"></span><div class="botoes"><button class="pdf btnPdf" onclick="gerarPDF('dash',this)">📄 Gerar PDF</button><button class="secondary" id="btnVerHistorico" onclick="abrir('historico')">📋 Ver tudo no histórico</button></div></div>
+    </div>
+  </section>
+
+  <section id="inspecao" class="section">
+    <div class="card form-card">
+      <h2 class="title" id="tituloInspecao">Nova inspeção</h2>
+      <div class="row row3">
+        <div><label>Data e hora</label><input id="iData" type="datetime-local"></div>
+        <div><label>Empresa / gerador</label><select id="iEmpresa"></select></div>
+        <div><label>Resíduo</label><select id="iResiduo" onchange="mostrarToleranciaResiduo()"></select></div>
+        <div><label>Placa do caminhão</label><input id="iPlaca" placeholder="ABC-1234" list="listaPlacas" autocomplete="off"><datalist id="listaPlacas"></datalist></div>
+        <div><label>Motorista</label><input id="iMotorista" list="listaMotPlaca" autocomplete="off"><datalist id="listaMotPlaca"></datalist></div>
+        <div><label>NF / MTR / documento</label><input id="iDoc"></div>
+      </div>
+      <div id="placaInfo" class="notice"></div>
+      <div id="toleranciaInfo" class="notice"></div>
+    </div>
+
+    <div class="card form-card">
+      <div class="titulo-linha"><h2 class="title">1. Inspeção visual</h2><label class="marcar-todos"><input type="checkbox" id="vTodos" onchange="marcarTodosVisual(this.checked)"> Selecionar todos</label></div>
+      <div class="check-grid">
+        <div class="check"><label><input type="checkbox" id="vIntegridade"> Carga íntegra e sem vazamentos</label></div>
+        <div class="check"><label><input type="checkbox" id="vIdentificacao"> Resíduo compatível com documentação</label></div>
+        <div class="check"><label><input type="checkbox" id="vOdor"> Sem odor anormal</label></div>
+        <div class="check"><label><input type="checkbox" id="vEmbalagem"> Embalagem/acondicionamento adequado</label></div>
+        <div class="check"><label><input type="checkbox" id="vEstranho"> Sem materiais estranhos/aparentes</label></div>
+        <div class="check"><label><input type="checkbox" id="vVazamento"> Sem sinais de vazamento/derramamento</label></div>
+      </div>
+      <label style="margin-top:14px">Observações visuais</label><textarea id="vObs"></textarea>
+    </div>
+
+    <div class="card form-card">
+      <h2 class="title">2. Inspeção de radiação</h2>
+      <div class="row row3">
+        <div><label>Resultado</label><select id="rResultado"><option value="Normal">Normal</option><option value="Alerta">Alerta</option><option value="Não conforme">Não conforme</option></select></div>
+        <div><label>Leitura</label><input id="rLeitura" type="number" step="0.001" placeholder="Ex.: 0,12"></div>
+        <div><label>Unidade</label><select id="rUnidade"><option>µSv/h</option><option>mSv/h</option><option>CPM</option><option>Outra</option></select></div>
+      </div>
+      <label style="margin-top:14px">Observações / procedimento adotado</label><textarea id="rObs"></textarea>
+    </div>
+
+    <div class="card form-card">
+      <h2 class="title">3. Inspeção de temperatura</h2>
+      <div class="row row3">
+        <div><label>Temperatura medida (°C)</label><input id="tValor" type="number" step="0.1" oninput="verificarTemperatura()"></div>
+        <div><label>Temperatura mínima aceitável (°C)</label><input id="tMin" type="number" step="0.1" readonly></div>
+        <div><label>Temperatura máxima aceitável (°C)</label><input id="tMax" type="number" step="0.1" readonly></div>
+      </div>
+      <div id="tempAviso" class="notice"></div>
+      <label style="margin-top:14px">Observações</label><textarea id="tObs"></textarea>
+    </div>
+
+    <div class="card">
+      <h2 class="title">Resultado da inspeção</h2>
+      <div class="row">
+        <div>
+          <label>Decisão</label>
+          <select id="iStatus">
+            <option value="Liberado">✅ Liberado</option>
+            <option value="Liberado com observação">⚠️ Liberado com observação</option>
+            <option value="Em espera">🕒 Em espera</option>
+            <option value="Não liberado">🚨 Não liberado</option>
+            <option value="Bloqueada para análise">⛔ Bloqueada para análise</option>
+          </select>
+          <div id="releaseBox" class="release-box">
+            <label><input type="checkbox" id="iLiberado"> Resíduo liberado para entrada após nova verificação</label>
+          </div>
+        </div>
+        <div><label>Inspetor responsável</label><input id="iInspetor"></div>
+      </div>
+      <div id="statusAviso" class="notice"></div>
+      <label style="margin-top:14px">Observação final</label><textarea id="iObs"></textarea>
+      <div class="actions">
+        <button class="primary" id="btnSalvarInspecao" onclick="salvarInspecao()">💾 Salvar inspeção</button>
+        <button class="secondary" onclick="limparInspecao()">↺ Limpar</button>
+        <button class="danger" id="btnCancelarEdicao" style="display:none" onclick="limparInspecao()">Cancelar edição</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="historico" class="section">
+    <div class="card filter-card">
+      <h2 class="title">Pesquisa e filtros</h2>
+      <div class="row4">
+        <div><label>Pesquisar</label><input id="busca" oninput="render()" placeholder="Empresa, placa, resíduo, documento..."></div>
+        <div><label>Status</label><select id="fStatus" onchange="render()"><option value="">Todos</option><option>Liberado</option><option>Liberado com observação</option><option>Em espera</option><option>Não liberado</option><option>Bloqueada para análise</option></select></div>
+        <div><label>Empresa</label><select id="fEmpresa" onchange="render()"><option value="">Todas</option></select></div>
+        <div><label>Resíduo</label><select id="fResiduo" onchange="render()"><option value="">Todos</option></select></div>
+      </div>
+      <div class="row4" style="margin-top:12px">
+        <div><label>Data inicial</label><input id="fDataIni" type="date" onchange="render()"></div>
+        <div><label>Data final</label><input id="fDataFim" type="date" onchange="render()"></div>
+        <div><label>Placa</label><input id="fPlaca" oninput="render()" placeholder="ABC-1234"></div>
+        <div class="filter-actions"><button class="secondary" onclick="limparFiltros()">↺ Limpar filtros</button><button class="pdf btnPdf" onclick="gerarPDF('hist',this)">📄 Gerar PDF</button></div>
+      </div>
+    </div>
+    <div class="card"><div id="histTabela"></div></div>
+  </section>
+
+  <section id="empresas" class="section">
+    <div class="card form-card" id="formEmpresa"><h2 class="title">Cadastrar empresa / gerador</h2>
+      <div class="row row3"><div><label>Razão social</label><input id="eNome"></div><div><label>CNPJ</label><input id="eCnpj"></div><div><label>Responsável</label><input id="eResp"></div></div>
+      <div class="actions"><button class="primary" onclick="salvarEmpresa()">＋ Cadastrar empresa</button></div>
+    </div>
+    <div class="card"><div id="empTabela"></div></div>
+  </section>
+
+  <section id="veiculos" class="section">
+    <div class="card form-card" id="formVeiculo"><h2 class="title" id="veiTitulo">Cadastrar veículo</h2>
+      <div class="row4">
+        <div><label>Placa</label><input id="veiPlaca" placeholder="ABC-1234 ou ABC1D23" maxlength="8" autocomplete="off"></div>
+        <div><label>Tipo de veículo</label><select id="veiTipo"><option value="">Não informado</option><option>Caminhão toco</option><option>Caminhão truck</option><option>Carreta</option><option>Bitrem</option><option>Caminhão caçamba</option><option>Caminhão tanque</option><option>Roll-on/roll-off</option><option>Utilitário</option></select></div>
+        <div><label>Transportadora</label><input id="veiTransp"></div>
+      </div>
+      <label style="margin-top:16px">Motoristas vinculados a esta placa</label>
+      <div class="mot-lista" id="veiMotoristas"></div>
+      <datalist id="listaMotoristas"></datalist>
+      <div style="margin-top:8px"><button class="secondary" onclick="addLinhaMotorista()">＋ Adicionar outro motorista</button></div>
+      <div class="small muted" style="margin-top:10px">Na nova inspeção, ao digitar a placa, os motoristas vinculados aparecem para escolha. Com apenas um, ele é preenchido automaticamente.</div>
+      <div class="actions"><button class="primary" id="btnSalvarVeiculo" onclick="salvarVeiculo()">＋ Cadastrar veículo</button><button class="danger" id="btnCancelarVeiculo" style="display:none" onclick="limparVeiculo()">Cancelar edição</button></div>
+    </div>
+    <div class="card">
+      <div class="campo-busca" style="max-width:420px;margin-bottom:14px"><svg class="pict" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="veiBusca" oninput="renderVeiculos()" placeholder="Pesquisar placa, motorista ou transportadora..."></div>
+      <div id="veiTabela"></div>
+    </div>
+  </section>
+
+  <section id="residuos" class="section">
+    <div class="card form-card" id="formResiduo"><h2 class="title">Cadastrar resíduo</h2>
+      <div class="row row4">
+        <div><label>Nome do resíduo</label><input id="xNome"></div>
+        <div><label>Código / classificação</label><input id="xCodigo"></div>
+        <div><label>Classe</label><select id="xClasse"><option>Classe I - Perigoso</option><option>Classe II A - Não inerte</option><option>Classe II B - Inerte</option><option>Não informado</option></select></div>
+        <div><label>Tolerância mínima de temperatura (°C)</label><input id="xTempMin" type="number" step="0.1" placeholder="Ex.: 10"></div>
+        <div><label>Tolerância máxima de temperatura (°C)</label><input id="xTempMax" type="number" step="0.1" placeholder="Ex.: 35"></div>
+      </div>
+      <div class="small muted" style="margin-top:10px">Na inspeção, a temperatura medida será comparada automaticamente com estes limites.</div>
+      <div class="actions"><button class="primary" onclick="salvarResiduo()">＋ Cadastrar resíduo</button></div>
+    </div>
+    <div class="card"><div id="resTabela"></div></div>
+  </section>
+
+  <section id="usuarios" class="section">
+    <div class="card form-card"><h2 class="title">Cadastrar usuário</h2>
+      <div class="row4">
+        <div><label>Nome completo</label><input id="uNovoNome"></div>
+        <div><label>Usuário (login)</label><input id="uNovoLogin" autocomplete="off" autocapitalize="none"></div>
+        <div><label>Senha inicial</label><input id="uNovoSenha" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres"></div>
+        <div><label>Perfil</label><select id="uNovoPerfil"></select></div>
+      </div>
+      <div class="actions"><button class="primary" onclick="salvarUsuario()">＋ Cadastrar usuário</button></div>
+    </div>
+    <div class="card form-card"><h2 class="title">Usuários cadastrados</h2><div id="usuTabela"></div></div>
+    <div class="card" id="permCard"><h2 class="title">Permissões por perfil</h2>
+      <p class="muted" style="margin-top:-6px">O administrador sempre tem acesso total. Marque o que o Master e o Usuário podem fazer — cada alteração vale na hora.</p>
+      <div style="overflow-x:auto"><div id="permTabela"></div></div>
+      <div class="actions"><button class="secondary" onclick="restaurarPermissoes()">↺ Restaurar permissões padrão</button></div>
+    </div>
+  </section>
+
+  <section id="semacesso" class="section">
+    <div class="card empty" style="margin-top:22px">Seu perfil ainda não tem acesso a nenhuma área do sistema. Fale com o administrador.</div>
+  </section>
+</div>
+
+<script>
+const KEY='inspecoes_residuos_v1';
+let db=JSON.parse(localStorage.getItem(KEY)||'null')||{empresas:[],residuos:[],inspecoes:[]};
+// Converte status antigos das inspeções já salvas
+{const MAPA={'Aprovada':'Liberado','Aprovada com observação':'Liberado com observação','Reprovada':'Não liberado'};
+ let mudou=false;(db.inspecoes||[]).forEach(x=>{if(MAPA[x.status]){x.status=MAPA[x.status];mudou=true}});
+ if(mudou)localStorage.setItem(KEY,JSON.stringify(db));}
+let editandoId=null, editandoStatusOriginal=null;
+
+/* ================= CONTROLE DE ACESSO ================= */
+const SESSAO='inspecoes_residuos_sessao';
+const SEM_PERMISSAO='Seu perfil não tem permissão para esta ação.';
+const PERFIS={admin:'Administrador',master:'Master',usuario:'Usuário'};
+const PERMS=[
+  ['dashboard','Ver dashboard e indicadores','Geral'],
+  ['inspecao_criar','Registrar nova inspeção','Inspeções'],
+  ['inspecao_editar','Editar inspeções','Inspeções'],
+  ['inspecao_excluir','Excluir inspeções','Inspeções'],
+  ['inspecao_liberar','Liberar cargas em espera','Inspeções'],
+  ['historico','Ver histórico e pesquisar','Inspeções'],
+  ['relatorio_pdf','Gerar relatório em PDF','Inspeções'],
+  ['empresas_ver','Ver empresas','Cadastros'],
+  ['empresas_cadastrar','Cadastrar empresas','Cadastros'],
+  ['empresas_excluir','Excluir empresas','Cadastros'],
+  ['residuos_ver','Ver resíduos','Cadastros'],
+  ['residuos_cadastrar','Cadastrar resíduos','Cadastros'],
+  ['residuos_excluir','Excluir resíduos','Cadastros'],
+  ['veiculos_ver','Ver veículos e motoristas','Cadastros'],
+  ['veiculos_cadastrar','Cadastrar veículos e vincular motoristas','Cadastros'],
+  ['veiculos_excluir','Excluir veículos','Cadastros'],
+  ['usuarios_gerenciar','Cadastrar e gerenciar usuários do perfil Usuário','Sistema']
+];
+function permPadrao(perfil){
+  const p=Object.fromEntries(PERMS.map(([k])=>[k,perfil==='master']));
+  if(perfil==='usuario')['dashboard','inspecao_criar','historico','relatorio_pdf','empresas_ver','residuos_ver','veiculos_ver'].forEach(k=>p[k]=true);
+  return p;
+}
+db.usuarios=db.usuarios||[];
+db.veiculos=db.veiculos||[];
+db.permissoes=db.permissoes||{};
+['master','usuario'].forEach(p=>db.permissoes[p]={...permPadrao(p),...(db.permissoes[p]||{})});
+db.permissoes.usuario.usuarios_gerenciar=false;
+let atual=null, modalAlvo=null;
+
+async function hashSenha(senha,salt){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(salt+':'+senha));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function novoUsuario(nome,login,senha,perfil){
+  const salt=crypto.randomUUID();
+  return {id:crypto.randomUUID(),nome,login,perfil,ativo:true,salt,hash:await hashSenha(senha,salt),criadoEm:new Date().toISOString()};
+}
+function pode(p){if(!atual)return false;if(atual.perfil==='admin')return true;return !!db.permissoes[atual.perfil]?.[p]}
+function podeGerir(u){if(!atual||!u)return false;if(atual.perfil==='admin')return true;return pode('usuarios_gerenciar')&&u.perfil==='usuario'}
+function podeSecao(id){
+  if(!atual)return false;
+  switch(id){
+    case 'dashboard':return pode('dashboard');
+    case 'inspecao':return pode('inspecao_criar')||(!!editandoId&&pode('inspecao_editar'));
+    case 'historico':return pode('historico');
+    case 'empresas':return pode('empresas_ver');
+    case 'veiculos':return pode('veiculos_ver');
+    case 'residuos':return pode('residuos_ver');
+    case 'usuarios':return atual.perfil==='admin'||pode('usuarios_gerenciar');
+  }
+  return false;
+}
+const SECOES=['dashboard','inspecao','historico','empresas','veiculos','residuos','usuarios'];
+function abrirPrimeira(){const s=SECOES.find(podeSecao);abrir(s||'semacesso')}
+
+function iniciarAuth(){
+  const setup=!db.usuarios.length;
+  document.body.classList.add('locked');
+  authSetup.style.display=authSetup2.style.display=setup?'block':'none';
+  authTitulo.textContent=setup?'Primeiro acesso':'Controle de Inspeções';
+  authSub.textContent=setup?'Crie a conta do administrador do sistema.':'Entre com seu usuário e senha.';
+  authBtn.textContent=setup?'Criar administrador e entrar':'Entrar';
+  aSenha.value=aSenha2.value='';authErro.textContent='';
+  setTimeout(()=>(setup?aNome:aLogin).focus(),50);
+}
+async function enviarAuth(){
+  authErro.textContent='';
+  const login=aLogin.value.trim().toLowerCase(),senha=aSenha.value;
+  if(!db.usuarios.length){
+    if(!aNome.value.trim()||!login)return authErro.textContent='Informe nome e usuário.';
+    if(/\s/.test(login))return authErro.textContent='O usuário não pode conter espaços.';
+    if(senha.length<6)return authErro.textContent='A senha deve ter pelo menos 6 caracteres.';
+    if(senha!==aSenha2.value)return authErro.textContent='As senhas não conferem.';
+    const u=await novoUsuario(aNome.value.trim(),login,senha,'admin');
+    db.usuarios.push(u);aNome.value='';entrar(u);return;
+  }
+  const u=db.usuarios.find(x=>x.login===login);
+  if(!u||await hashSenha(senha,u.salt)!==u.hash){aSenha.value='';return authErro.textContent='Usuário ou senha incorretos.'}
+  if(!u.ativo)return authErro.textContent='Este usuário está bloqueado. Procure o administrador.';
+  entrar(u);
+}
+function entrar(u){
+  atual=u;sessionStorage.setItem(SESSAO,u.id);
+  u.ultimoAcesso=new Date().toISOString();localStorage.setItem(KEY,JSON.stringify(db));
+  document.body.classList.remove('locked');aLogin.value=aSenha.value='';
+  limparInspecao();atualizarTudo();abrirPrimeira();
+}
+function sair(){
+  atual=null;editandoId=null;sessionStorage.removeItem(SESSAO);fecharModal();iniciarAuth();
+}
+function aplicarPermissoes(){
+  if(!atual)return;
+  uNome.textContent=atual.nome;uPerfil.textContent=PERFIS[atual.perfil];
+  uAvatar.textContent=atual.nome.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
+  document.querySelectorAll('.tab').forEach(t=>{const sec=t.dataset.sec;t.style.display=(sec==='inspecao'?pode('inspecao_criar'):podeSecao(sec))?'':'none'});
+  btnNovaHeader.style.display=pode('inspecao_criar')?'':'none';
+  kpiGrid.style.display=pode('dashboard')?'':'none';
+  formEmpresa.style.display=pode('empresas_cadastrar')?'':'none';
+  formResiduo.style.display=pode('residuos_cadastrar')?'':'none';
+  formVeiculo.style.display=pode('veiculos_cadastrar')?'':'none';
+  permCard.style.display=atual.perfil==='admin'?'':'none';
+  document.querySelectorAll('.btnPdf').forEach(b=>b.style.display=pode('relatorio_pdf')?'':'none');
+  const ativa=document.querySelector('.section.active');
+  if(!ativa||(ativa.id==='semacesso'?SECOES.some(podeSecao):!podeSecao(ativa.id)))abrirPrimeira();
+}
+
+/* ----- Usuários ----- */
+async function salvarUsuario(){
+  const nome=uNovoNome.value.trim(),login=uNovoLogin.value.trim().toLowerCase(),senha=uNovoSenha.value,perfil=uNovoPerfil.value;
+  if(!(atual?.perfil==='admin'||(pode('usuarios_gerenciar')&&perfil==='usuario')))return alert(SEM_PERMISSAO);
+  if(!nome||!login)return alert('Informe nome e usuário (login).');
+  if(/\s/.test(login))return alert('O usuário (login) não pode conter espaços.');
+  if(db.usuarios.some(u=>u.login===login))return alert('Já existe um usuário com esse login.');
+  if(senha.length<6)return alert('A senha deve ter pelo menos 6 caracteres.');
+  db.usuarios.push(await novoUsuario(nome,login,senha,perfil));
+  uNovoNome.value=uNovoLogin.value=uNovoSenha.value='';persist();alert('Usuário cadastrado.');
+}
+function alterarPerfil(id,perfil){
+  const u=db.usuarios.find(x=>x.id===id);
+  if(atual?.perfil!=='admin'||!u||u.id===atual.id)return alert(SEM_PERMISSAO);
+  u.perfil=perfil;persist();
+}
+function alternarAtivo(id){
+  const u=db.usuarios.find(x=>x.id===id);
+  if(!podeGerir(u)||u.id===atual.id)return alert(SEM_PERMISSAO);
+  u.ativo=!u.ativo;persist();
+}
+function excluirUsuario(id){
+  const u=db.usuarios.find(x=>x.id===id);
+  if(!podeGerir(u)||u.id===atual.id)return alert(SEM_PERMISSAO);
+  if(confirm(`Excluir o usuário "${u.nome}"?`)){db.usuarios=db.usuarios.filter(x=>x.id!==id);persist()}
+}
+function definirPermissao(perfil,chave,valor){
+  if(atual?.perfil!=='admin')return alert(SEM_PERMISSAO);
+  db.permissoes[perfil][chave]=valor;persist();
+}
+function restaurarPermissoes(){
+  if(atual?.perfil!=='admin')return alert(SEM_PERMISSAO);
+  if(confirm('Restaurar as permissões padrão do Master e do Usuário?')){db.permissoes={master:permPadrao('master'),usuario:permPadrao('usuario')};persist()}
+}
+function renderUsuarios(){
+  if(!atual)return;
+  const admin=atual.perfil==='admin';
+  const pSel=uNovoPerfil.value;
+  uNovoPerfil.innerHTML=(admin?['usuario','master','admin']:['usuario']).map(p=>`<option value="${p}">${PERFIS[p]}</option>`).join('');
+  if([...uNovoPerfil.options].some(o=>o.value===pSel))uNovoPerfil.value=pSel;
+  const lista=db.usuarios.filter(u=>admin||u.perfil==='usuario'||u.id===atual.id);
+  usuTabela.innerHTML=lista.length?`<table><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Situação</th><th>Último acesso</th><th>Ações</th></tr></thead><tbody>${lista.map(u=>{
+    const eu=u.id===atual.id,gerir=podeGerir(u)&&!eu;
+    const perfil=admin&&!eu
+      ?`<select onchange="alterarPerfil('${u.id}',this.value)" style="width:auto;padding:6px 8px">${['usuario','master','admin'].map(p=>`<option value="${p}"${u.perfil===p?' selected':''}>${PERFIS[p]}</option>`).join('')}</select>`
+      :`<span class="badge role-${u.perfil}">${PERFIS[u.perfil]}</span>`;
+    const acoes=eu?`<button class="secondary" onclick="abrirModalSenha()">🔑 Minha senha</button>`
+      :gerir?`<button class="secondary" onclick="abrirModalSenha('${u.id}')">🔑 Redefinir senha</button> <button class="warning" onclick="alternarAtivo('${u.id}')">${u.ativo?'Bloquear':'Desbloquear'}</button> <button class="danger" onclick="excluirUsuario('${u.id}')">Excluir</button>`:'—';
+    return `<tr><td>${esc(u.nome)}${eu?' <span class="muted">(você)</span>':''}</td><td>${esc(u.login)}</td><td>${perfil}</td><td>${u.ativo?'<span class="badge ok">Ativo</span>':'<span class="badge bad">Bloqueado</span>'}</td><td>${u.ultimoAcesso?new Date(u.ultimoAcesso).toLocaleString('pt-BR'):'—'}</td><td class="nowrap">${acoes}</td></tr>`;
+  }).join('')}</tbody></table>`:'<div class="empty">Nenhum usuário cadastrado.</div>';
+  renderPermissoes();
+}
+function renderPermissoes(){
+  if(atual?.perfil!=='admin'){permTabela.innerHTML='';return}
+  let grupo='';
+  permTabela.innerHTML=`<table><thead><tr><th>Permissão</th><th class="c">Administrador</th><th class="c">Master</th><th class="c">Usuário</th></tr></thead><tbody>${PERMS.map(([k,nome,g])=>{
+    const cab=g!==grupo?`<tr class="grp"><td colspan="4">${g}</td></tr>`:'';grupo=g;
+    const cols=['master','usuario'].map(p=>p==='usuario'&&k==='usuarios_gerenciar'
+      ?'<td class="c"><span class="muted">—</span></td>'
+      :`<td class="c"><input type="checkbox" ${db.permissoes[p][k]?'checked':''} onchange="definirPermissao('${p}','${k}',this.checked)"></td>`).join('');
+    return `${cab}<tr><td>${nome}</td><td class="c"><input type="checkbox" checked disabled></td>${cols}</tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+/* ----- Senhas ----- */
+function abrirModalSenha(id){
+  if(!atual)return;
+  const alvo=id?db.usuarios.find(u=>u.id===id):atual;
+  if(!alvo)return;
+  if(alvo.id!==atual.id&&!podeGerir(alvo))return alert(SEM_PERMISSAO);
+  modalAlvo=alvo.id;const proprio=alvo.id===atual.id;
+  mTitulo.textContent=proprio?'Alterar minha senha':`Redefinir senha de ${alvo.nome}`;
+  mAtualBox.style.display=proprio?'block':'none';
+  mAtual.value=mNova.value=mConf.value='';mErro.textContent='';
+  modalSenha.classList.add('show');setTimeout(()=>(proprio?mAtual:mNova).focus(),50);
+}
+function fecharModal(){modalSenha.classList.remove('show');modalAlvo=null}
+async function confirmarSenha(){
+  const u=db.usuarios.find(x=>x.id===modalAlvo);if(!u||!atual)return fecharModal();
+  const proprio=u.id===atual.id;
+  if(!proprio&&!podeGerir(u))return mErro.textContent=SEM_PERMISSAO;
+  if(proprio&&await hashSenha(mAtual.value,u.salt)!==u.hash)return mErro.textContent='Senha atual incorreta.';
+  if(mNova.value.length<6)return mErro.textContent='A nova senha deve ter pelo menos 6 caracteres.';
+  if(mNova.value!==mConf.value)return mErro.textContent='As senhas não conferem.';
+  u.salt=crypto.randomUUID();u.hash=await hashSenha(mNova.value,u.salt);
+  persist();fecharModal();alert('Senha alterada com sucesso.');
+}
+[aNome,aLogin,aSenha,aSenha2].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')enviarAuth()}));
+[mAtual,mNova,mConf].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')confirmarSenha()}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharModal()});
+/* ================= FIM CONTROLE DE ACESSO ================= */
+
+function persist(){localStorage.setItem(KEY,JSON.stringify(db));atualizarTudo()}
+function abrir(id,el){
+  if(id!=='semacesso'&&!podeSecao(id))return alert('Seu perfil não tem acesso a esta área.');
+  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const tab=el||document.querySelector(`.tab[data-sec="${id}"]`);
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));if(tab)tab.classList.add('active');
+  if(id==='usuarios') renderUsuarios();
+  if(id==='veiculos') renderVeiculos();
+  if(id==='inspecao') preencherSelects();
+  if(id==='historico') atualizarFiltros();
+}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function preencherSelects(){
+  listaPlacas.innerHTML=db.veiculos.map(v=>`<option value="${esc(v.placa)}">${esc(nomesMot(v).join(', '))}</option>`).join('');
+  listaMotoristas.innerHTML=todosMotoristas().map(m=>`<option value="${esc(m)}">`).join('');
+  const oldE=iEmpresa.value,oldR=iResiduo.value;
+  iEmpresa.innerHTML='<option value="">Selecione</option>'+db.empresas.map(e=>`<option value="${e.id}">${esc(e.nome)}</option>`).join('');
+  iResiduo.innerHTML='<option value="">Selecione</option>'+db.residuos.map(e=>`<option value="${e.id}">${esc(e.nome)}${e.codigo?' - '+esc(e.codigo):''}</option>`).join('');
+  if(db.empresas.some(x=>x.id===oldE))iEmpresa.value=oldE;
+  if(db.residuos.some(x=>x.id===oldR))iResiduo.value=oldR;
+  mostrarToleranciaResiduo();
+}
+function atualizarFiltros(){
+  const e=fEmpresa.value,r=fResiduo.value;
+  fEmpresa.innerHTML='<option value="">Todas</option>'+db.empresas.map(x=>`<option value="${esc(x.nome)}">${esc(x.nome)}</option>`).join('');
+  fResiduo.innerHTML='<option value="">Todos</option>'+db.residuos.map(x=>`<option value="${esc(x.nome)}">${esc(x.nome)}</option>`).join('');
+  if(db.empresas.some(x=>x.nome===e))fEmpresa.value=e;
+  if(db.residuos.some(x=>x.nome===r))fResiduo.value=r;
+  const de=dEmpresa.value;
+  dEmpresa.innerHTML='<option value="">Todas</option>'+db.empresas.map(x=>`<option value="${esc(x.nome)}">${esc(x.nome)}</option>`).join('');
+  if(db.empresas.some(x=>x.nome===de))dEmpresa.value=de;
+}
+function salvarEmpresa(){
+  if(!pode('empresas_cadastrar'))return alert(SEM_PERMISSAO);
+  if(!eNome.value.trim())return alert('Informe a razão social.');
+  db.empresas.push({id:crypto.randomUUID(),nome:eNome.value.trim(),cnpj:eCnpj.value.trim(),resp:eResp.value.trim()});
+  eNome.value=eCnpj.value=eResp.value='';persist();alert('Empresa cadastrada.');
+}
+function salvarResiduo(){
+  if(!pode('residuos_cadastrar'))return alert(SEM_PERMISSAO);
+  if(!xNome.value.trim())return alert('Informe o nome do resíduo.');
+  const min=xTempMin.value===''?null:Number(xTempMin.value),max=xTempMax.value===''?null:Number(xTempMax.value);
+  if(min!==null&&max!==null&&min>max)return alert('A temperatura mínima não pode ser maior que a máxima.');
+  db.residuos.push({id:crypto.randomUUID(),nome:xNome.value.trim(),codigo:xCodigo.value.trim(),classe:xClasse.value,tempMin:min,tempMax:max});
+  xNome.value=xCodigo.value=xTempMin.value=xTempMax.value='';persist();alert('Resíduo cadastrado com tolerância de temperatura.');
+}
+function mostrarToleranciaResiduo(){
+  const r=db.residuos.find(x=>x.id===iResiduo.value);
+  if(!r){toleranciaInfo.classList.remove('show');tMin.value='';tMax.value='';return}
+  tMin.value=r.tempMin??'';tMax.value=r.tempMax??'';
+  const limites=(r.tempMin!=null||r.tempMax!=null)?`Tolerância cadastrada: ${r.tempMin!=null?r.tempMin+' °C':'sem mínimo'} até ${r.tempMax!=null?r.tempMax+' °C':'sem máximo'}.`:'Este resíduo não possui tolerância de temperatura cadastrada.';
+  toleranciaInfo.textContent=limites;toleranciaInfo.classList.add('show');verificarTemperatura();
+}
+function verificarTemperatura(){
+  const r=db.residuos.find(x=>x.id===iResiduo.value),v=tValor.value===''?null:Number(tValor.value);
+  if(!r||v===null){tempAviso.classList.remove('show');return false}
+  const fora=(r.tempMin!=null&&v<r.tempMin)||(r.tempMax!=null&&v>r.tempMax);
+  if(fora){
+    tempAviso.textContent=`⚠️ Temperatura fora da tolerância do resíduo. A carga deverá permanecer na ÁREA DE ESPERA até ser liberada. O status será definido como "Em espera".`;
+    tempAviso.classList.add('show');
+    if(!editandoId || iStatus.value==='Em espera') iStatus.value='Em espera';
+    statusAviso.textContent='🕒 Carga em espera: aguarde a liberação do resíduo antes de liberar.';
+    statusAviso.classList.add('show');
+  }else{
+    tempAviso.classList.remove('show');
+    if(iStatus.value==='Em espera'&&!editandoId){iStatus.value='Liberado'}
+    statusAviso.classList.remove('show');
+  }
+  return fora;
+}
+function salvarInspecao(){
+  if(editandoId?!pode('inspecao_editar'):!pode('inspecao_criar'))return alert(SEM_PERMISSAO);
+  const empresa=db.empresas.find(x=>x.id===iEmpresa.value),residuo=db.residuos.find(x=>x.id===iResiduo.value);
+  if(!empresa||!residuo||!iPlaca.value.trim()||!iInspetor.value.trim())return alert('Preencha empresa, resíduo, placa e inspetor.');
+  const checks=['vIntegridade','vIdentificacao','vOdor','vEmbalagem','vEstranho','vVazamento'];
+  const visual=checks.filter(x=>document.getElementById(x).checked).length;
+  const fora=verificarTemperatura();
+  let status=iStatus.value;
+  if(fora && !(editandoId && iLiberado.checked && pode('inspecao_liberar')))status='Em espera';
+  if(editandoId && editandoStatusOriginal==='Em espera' && status!=='Em espera' && !pode('inspecao_liberar')){
+    return alert('Seu perfil não tem permissão para liberar cargas em espera.');
+  }
+  if(editandoId && editandoStatusOriginal==='Em espera' && status==='Liberado' && !iLiberado.checked){
+    return alert('Para alterar uma carga em espera para Liberado, marque "Resíduo liberado para entrada após nova verificação".');
+  }
+  const dados={
+    data:iData.value||new Date().toISOString().slice(0,16),empresa:empresa.nome,residuo:residuo.nome,placa:fmtPlaca(iPlaca.value),
+    motorista:iMotorista.value,doc:iDoc.value,visual,visualTotal:checks.length,visualObs:vObs.value,
+    radiacao:rResultado.value,leitura:rLeitura.value,unidade:rUnidade.value,rObs:rObs.value,
+    temp:tValor.value,tMin:residuo.tempMin,tMax:residuo.tempMax,tObs:tObs.value,status,inspetor:iInspetor.value,obs:iObs.value
+  };
+  if(status==='Em espera'){
+    dados.obs=(dados.obs?dados.obs+' ':'')+'Resíduo deve permanecer na área de espera até ser liberado.';
+  }
+  if(editandoId){
+    const idx=db.inspecoes.findIndex(x=>x.id===editandoId);
+    if(idx>=0)db.inspecoes[idx]={...db.inspecoes[idx],...dados,liberado:!!iLiberado.checked&&pode('inspecao_liberar'),alteradoPor:atual.login,alteradoEm:new Date().toISOString()};
+    alert('Inspeção atualizada com sucesso.');
+  }else{
+    db.inspecoes.unshift({id:crypto.randomUUID(),...dados,liberado:false,criadoPor:atual.login});
+    alert(status==='Em espera'?'Inspeção registrada. A carga ficará em espera até a liberação.':'Inspeção registrada com sucesso.');
+  }
+  persist();limparInspecao();
+  if(podeSecao('historico'))abrir('historico');else if(!pode('inspecao_criar'))abrirPrimeira();
+}
+function editarInspecao(id){
+  if(!pode('inspecao_editar'))return alert(SEM_PERMISSAO);
+  const x=db.inspecoes.find(v=>v.id===id);if(!x)return;
+  editandoId=id;editandoStatusOriginal=x.status||null;abrir('inspecao');
+  tituloInspecao.textContent='Editar inspeção';
+  btnSalvarInspecao.textContent='💾 Salvar alterações';btnCancelarEdicao.style.display='inline-block';
+  const emp=db.empresas.find(v=>v.nome===x.empresa),res=db.residuos.find(v=>v.nome===x.residuo);
+  iEmpresa.value=emp?.id||'';iResiduo.value=res?.id||'';iData.value=x.data?.slice(0,16)||'';
+  iPlaca.value=x.placa||'';iMotorista.value=x.motorista||'';iDoc.value=x.doc||'';iMotorista.dataset.auto='';verificarPlaca(false);
+  ['vIntegridade','vIdentificacao','vOdor','vEmbalagem','vEstranho','vVazamento'].forEach((id,n)=>document.getElementById(id).checked=(x.visual||0)>n);sincronizarTodosVisual();
+  vObs.value=x.visualObs||'';rResultado.value=x.radiacao||'Normal';rLeitura.value=x.leitura||'';rUnidade.value=x.unidade||'µSv/h';rObs.value=x.rObs||'';
+  tValor.value=x.temp??'';tMin.value=res?.tempMin??x.tMin??'';tMax.value=res?.tempMax??x.tMax??'';tObs.value=x.tObs||'';
+  iStatus.value=x.status||'Liberado';iInspetor.value=x.inspetor||'';iObs.value=x.obs||'';iLiberado.checked=!!x.liberado;
+  releaseBox.classList.toggle('show',x.status==='Em espera'&&pode('inspecao_liberar'));mostrarToleranciaResiduo();verificarTemperatura();
+}
+function limparInspecao(){
+  editandoId=null;editandoStatusOriginal=null;
+  document.querySelectorAll('#inspecao input,#inspecao textarea').forEach(x=>{if(x.type==='checkbox')x.checked=false;else x.value=''});
+  iData.value=new Date().toISOString().slice(0,16);iStatus.value='Liberado';rResultado.value='Normal';
+  tituloInspecao.textContent='Nova inspeção';btnSalvarInspecao.textContent='💾 Salvar inspeção';btnCancelarEdicao.style.display='none';
+  releaseBox.classList.remove('show');statusAviso.classList.remove('show');tempAviso.classList.remove('show');toleranciaInfo.classList.remove('show');
+  placaInfo.className='notice';iMotorista.dataset.auto='';sincronizarTodosVisual();
+  preencherSelects();
+  if(atual)iInspetor.value=atual.nome;
+  if(atual&&!pode('inspecao_criar')&&document.getElementById('inspecao').classList.contains('active'))abrirPrimeira();
+}
+function excluir(tipo,id){if(!pode(tipo==='empresas'?'empresas_excluir':'residuos_excluir'))return alert(SEM_PERMISSAO);if(confirm('Excluir este cadastro?')){db[tipo]=db[tipo].filter(x=>x.id!==id);persist()}}
+function excluirInspecao(id){if(!pode('inspecao_excluir'))return alert(SEM_PERMISSAO);if(confirm('Excluir esta inspeção?')){db.inspecoes=db.inspecoes.filter(x=>x.id!==id);persist()}}
+const ICONE_STATUS={'Liberado':'✅','Liberado com observação':'⚠️','Em espera':'🕒','Não liberado':'🚨','Bloqueada para análise':'⛔'};
+function badge(s){let c=s==='Liberado'?'ok':s==='Em espera'?'warn':s==='Liberado com observação'?'info':'bad';return `<span class="badge ${c}">${ICONE_STATUS[s]||''} ${esc(s)}</span>`}
+function render(){
+  const q=(busca.value||'').toLowerCase().trim(),fs=fStatus.value,fe=fEmpresa.value,fr=fResiduo.value,fi=fDataIni.value,ff=fDataFim.value,fp=(fPlaca.value||'').toLowerCase().trim();
+  let arr=listaHist=db.inspecoes.filter(x=>{
+    const d=(x.data||'').slice(0,10);
+    return (!q||[x.empresa,x.residuo,x.placa,x.doc,x.motorista,x.inspetor,x.obs].join(' ').toLowerCase().includes(q))
+      &&(!fs||x.status===fs)&&(!fe||x.empresa===fe)&&(!fr||x.residuo===fr)&&(!fi||d>=fi)&&(!ff||d<=ff)&&(!fp||(x.placa||'').toLowerCase().includes(fp));
+  });
+  histTabela.innerHTML=arr.length?`<table><thead><tr><th>Data</th><th>Empresa</th><th>Resíduo</th><th>Placa</th><th>Motorista</th><th>Temp.</th><th>Status</th><th>Inspetor</th><th>Ações</th></tr></thead><tbody>${arr.map(x=>`<tr><td>${new Date(x.data).toLocaleString('pt-BR')}</td><td>${esc(x.empresa)}</td><td>${esc(x.residuo)}</td><td>${esc(x.placa)}</td><td>${esc(x.motorista||'—')}</td><td class="nowrap">${esc(x.temp||'-')} °C</td><td class="nowrap">${badge(x.status)}</td><td>${esc(x.inspetor)}</td><td class="nowrap">${[pode('inspecao_editar')?`<button class="secondary" onclick="editarInspecao('${x.id}')">✏️ Editar</button>`:'',pode('inspecao_excluir')?`<button class="danger" onclick="excluirInspecao('${x.id}')">Excluir</button>`:''].join(' ').trim()||'—'}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhuma inspeção encontrada com os filtros informados.</div>';
+  renderDash();
+  renderVeiculos();
+  empTabela.innerHTML=db.empresas.length?`<table><thead><tr><th>Empresa</th><th>CNPJ</th><th>Responsável</th><th></th></tr></thead><tbody>${db.empresas.map(x=>`<tr><td>${esc(x.nome)}</td><td>${esc(x.cnpj)}</td><td>${esc(x.resp)}</td><td>${pode('empresas_excluir')?`<button class="danger" onclick="excluir('empresas','${x.id}')">Excluir</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhuma empresa cadastrada.</div>';
+  resTabela.innerHTML=db.residuos.length?`<table><thead><tr><th>Resíduo</th><th>Código</th><th>Classe</th><th>Tolerância de temperatura</th><th></th></tr></thead><tbody>${db.residuos.map(x=>`<tr><td>${esc(x.nome)}</td><td>${esc(x.codigo)}</td><td>${esc(x.classe)}</td><td>${x.tempMin!=null?esc(x.tempMin)+' °C':'—'} até ${x.tempMax!=null?esc(x.tempMax)+' °C':'—'}</td><td>${pode('residuos_excluir')?`<button class="danger" onclick="excluir('residuos','${x.id}')">Excluir</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum resíduo cadastrado.</div>';
+}
+function dataLocal(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+function noPeriodo(x,per){
+  if(!per)return true;
+  const d=(x.data||'').slice(0,10),hoje=new Date();
+  if(per==='hoje')return d===dataLocal(hoje);
+  if(per==='mes')return d.slice(0,7)===dataLocal(hoje).slice(0,7);
+  const ini=new Date(hoje);ini.setDate(ini.getDate()-(Number(per)-1));
+  return d>=dataLocal(ini);
+}
+function statusConfere(x,st){return !st||(st==='__nl'?(x.status==='Não liberado'||x.status==='Bloqueada para análise'):x.status===st)}
+function renderDash(){
+  const q=(dBusca.value||'').toLowerCase().trim(),st=dStatus.value,per=dPeriodo.value,emp=dEmpresa.value;
+  const base=db.inspecoes.filter(x=>noPeriodo(x,per)&&(!emp||x.empresa===emp));
+  kInspecoes.textContent=base.length;
+  kLiberados.textContent=base.filter(x=>x.status==='Liberado').length;
+  kEspera.textContent=base.filter(x=>x.status==='Em espera').length;
+  kNaoLib.textContent=base.filter(x=>statusConfere(x,'__nl')).length;
+  kEmpresas.textContent=db.empresas.length;
+  document.querySelectorAll('.kpi[data-kpi]').forEach(k=>k.classList.toggle('sel',k.dataset.kpi===st&&st!==''));
+  const arr=listaDash=base.filter(x=>statusConfere(x,st)&&(!q||[x.empresa,x.residuo,x.placa,x.motorista,x.doc,x.inspetor].join(' ').toLowerCase().includes(q)));
+  const LIM=10,mostra=arr.slice(0,LIM);
+  dashTabela.innerHTML=mostra.length?`<table><thead><tr><th>Data</th><th>Empresa</th><th>Resíduo</th><th>Placa</th><th>Motorista</th><th>Status</th><th>Ação</th></tr></thead><tbody>${mostra.map(x=>`<tr><td>${new Date(x.data).toLocaleString('pt-BR')}</td><td>${esc(x.empresa)}</td><td>${esc(x.residuo)}</td><td>${esc(x.placa)}</td><td>${esc(x.motorista||'—')}</td><td class="nowrap">${badge(x.status)}</td><td>${pode('inspecao_editar')?`<button class="secondary" onclick="editarInspecao('${x.id}')">✏️ Editar</button>`:'—'}</td></tr>`).join('')}</tbody></table>`
+    :`<div class="empty">${db.inspecoes.length?'Nenhuma inspeção encontrada com os filtros escolhidos.':'Ainda não há inspeções registradas.'}</div>`;
+  dashInfo.textContent=arr.length?`Mostrando ${mostra.length} de ${arr.length} inspeç${arr.length===1?'ão':'ões'}${arr.length>LIM?' (as mais recentes)':''}.`:'';
+  btnVerHistorico.style.display=podeSecao('historico')?'':'none';
+}
+/* ================= RELATÓRIO PDF ================= */
+let listaHist=[],listaDash=[];
+function carregarScript(src){return new Promise((ok,erro)=>{const sc=document.createElement('script');sc.src=src;sc.onload=ok;sc.onerror=erro;document.head.appendChild(sc)})}
+async function carregarJsPDF(){
+  if(window.jspdf?.jsPDF?.API?.autoTable)return true;
+  try{
+    if(!window.jspdf)await carregarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    await carregarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+    return !!window.jspdf?.jsPDF?.API?.autoTable;
+  }catch(e){return false}
+}
+function fmtData(d){return d?new Date(d).toLocaleDateString('pt-BR')+' '+new Date(d).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—'}
+function fmtDia(d){return d?d.split('-').reverse().join('/'):''}
+function descreverFiltros(origem){
+  const f=[];
+  if(origem==='hist'){
+    if(busca.value.trim())f.push(`Pesquisa: "${busca.value.trim()}"`);
+    if(fStatus.value)f.push('Status: '+fStatus.value);
+    if(fEmpresa.value)f.push('Empresa: '+fEmpresa.value);
+    if(fResiduo.value)f.push('Resíduo: '+fResiduo.value);
+    if(fDataIni.value||fDataFim.value)f.push(`Período: ${fDataIni.value?fmtDia(fDataIni.value):'início'} a ${fDataFim.value?fmtDia(fDataFim.value):'hoje'}`);
+    if(fPlaca.value.trim())f.push('Placa: '+fPlaca.value.trim().toUpperCase());
+  }else{
+    if(dBusca.value.trim())f.push(`Pesquisa: "${dBusca.value.trim()}"`);
+    if(dStatus.value)f.push('Status: '+(dStatus.value==='__nl'?'Não liberado + bloqueada':dStatus.value));
+    if(dPeriodo.value)f.push('Período: '+dPeriodo.options[dPeriodo.selectedIndex].text);
+    if(dEmpresa.value)f.push('Empresa: '+dEmpresa.value);
+  }
+  return f.length?f.join('  |  '):'Nenhum filtro aplicado (todas as inspeções)';
+}
+function dadosRelatorio(origem){
+  const lista=origem==='hist'?listaHist:listaDash;
+  const cont=s=>lista.filter(x=>statusConfere(x,s)).length;
+  return {
+    lista,
+    filtros:descreverFiltros(origem),
+    resumo:[['Total',lista.length],['Liberado',cont('Liberado')],['Liberado c/ obs.',cont('Liberado com observação')],['Em espera',cont('Em espera')],['Não liberado / bloqueada',cont('__nl')]],
+    cab:['Data','Empresa','Resíduo','Placa','Motorista','NF / MTR','Temp.','Radiação','Status','Inspetor'],
+    linhas:lista.map(x=>[fmtData(x.data),x.empresa||'—',x.residuo||'—',x.placa||'—',x.motorista||'—',x.doc||'—',
+      x.temp!==''&&x.temp!=null?x.temp+' °C':'—',(x.radiacao||'—')+(x.leitura?` (${x.leitura} ${x.unidade||''})`:''),x.status||'—',x.inspetor||'—'])
+  };
+}
+const COR_STATUS={'Liberado':[2,122,72],'Liberado com observação':[23,92,211],'Em espera':[181,71,8],'Não liberado':[180,35,24],'Bloqueada para análise':[180,35,24]};
+async function gerarPDF(origem,btn){
+  if(!pode('relatorio_pdf'))return alert(SEM_PERMISSAO);
+  if(origem==='hist')render();else renderDash();
+  const R=dadosRelatorio(origem);
+  if(!R.lista.length)return alert('Nenhuma inspeção encontrada com os filtros atuais para gerar o PDF.');
+  const txt=btn.textContent;btn.disabled=true;btn.textContent='⏳ Gerando...';
+  try{
+    if(await carregarJsPDF())pdfJs(R);
+    else pdfImpressao(R);
+  }finally{btn.disabled=false;btn.textContent=txt}
+}
+function pdfJs(R){
+  const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth(),agora=new Date();
+  doc.setFillColor(16,42,86);doc.rect(0,0,W,24,'F');
+  doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text('Relatório de Inspeções de Resíduos',12,11);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('Inspeção visual • radiação • temperatura de cargas de caminhão',12,18);
+  doc.text(`Gerado em ${agora.toLocaleString('pt-BR')}`,W-12,11,{align:'right'});
+  doc.text(`Por: ${atual.nome} (${PERFIS[atual.perfil]})`,W-12,18,{align:'right'});
+  doc.setTextColor(52,64,84);doc.setFontSize(9);doc.setFont('helvetica','bold');doc.text('Filtros:',12,32);
+  doc.setFont('helvetica','normal');const fl=doc.splitTextToSize(R.filtros,W-40);doc.text(fl,27,32);
+  let y=32+fl.length*4.5+3,x=12;
+  R.resumo.forEach(([n,v])=>{const t=`${n}: ${v}`,w=doc.getTextWidth(t)+8;doc.setFillColor(239,244,255);doc.roundedRect(x,y-4.5,w,7,1.5,1.5,'F');doc.setTextColor(21,94,239);doc.setFont('helvetica','bold');doc.text(t,x+4,y);x+=w+4});
+  doc.autoTable({
+    startY:y+6,head:[R.cab],body:R.linhas.map(l=>l.map(c=>String(c).replace(/µ/g,'u'))),theme:'grid',margin:{left:12,right:12,top:14,bottom:14},
+    styles:{fontSize:8,cellPadding:2,textColor:[23,32,51],lineColor:[228,231,236],lineWidth:.2},
+    headStyles:{fillColor:[21,94,239],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[248,250,252]},
+    columnStyles:{0:{cellWidth:26},3:{cellWidth:20},6:{cellWidth:16},8:{cellWidth:28}},
+    didParseCell:d=>{if(d.section==='body'&&d.column.index===8){d.cell.styles.fontStyle='bold';d.cell.styles.textColor=COR_STATUS[d.cell.raw]||[23,32,51]}},
+    didDrawPage:()=>{doc.setFontSize(8);doc.setTextColor(102,112,133);doc.setFont('helvetica','normal');
+      doc.text('Controle de Inspeções de Resíduos',12,doc.internal.pageSize.getHeight()-7);
+      doc.text(`Página ${doc.internal.getCurrentPageInfo().pageNumber} de {total}`,W-12,doc.internal.pageSize.getHeight()-7,{align:'right'})}
+  });
+  doc.putTotalPages('{total}');
+  const p=n=>String(n).padStart(2,'0');
+  doc.save(`relatorio_inspecoes_${agora.getFullYear()}-${p(agora.getMonth()+1)}-${p(agora.getDate())}_${p(agora.getHours())}${p(agora.getMinutes())}.pdf`);
+}
+function pdfImpressao(R){
+  // Sem internet: abre a janela de impressão, onde é possível escolher "Salvar como PDF"
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório de Inspeções</title><style>
+    @page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#172033;font-size:11px}
+    h1{font-size:18px;margin:0}.sub{color:#667085;margin:4px 0 10px}.box{background:#f8fafc;border:1px solid #e4e7ec;padding:8px;border-radius:6px;margin-bottom:8px}
+    .res span{display:inline-block;background:#eff4ff;color:#155eef;font-weight:bold;padding:4px 8px;border-radius:4px;margin:0 6px 6px 0}
+    table{width:100%;border-collapse:collapse}th{background:#155eef;color:#fff;text-align:left}th,td{border:1px solid #e4e7ec;padding:4px 5px}tr:nth-child(even) td{background:#f8fafc}
+    thead{display:table-header-group}tr{page-break-inside:avoid}</style></head><body>
+    <h1>Relatório de Inspeções de Resíduos</h1><div class="sub">Gerado em ${new Date().toLocaleString('pt-BR')} por ${esc(atual.nome)} (${PERFIS[atual.perfil]})</div>
+    <div class="box"><b>Filtros:</b> ${esc(R.filtros)}</div><div class="res">${R.resumo.map(([n,v])=>`<span>${n}: ${v}</span>`).join('')}</div>
+    <table><thead><tr>${R.cab.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${R.linhas.map(l=>`<tr>${l.map((c,i)=>`<td${i===8?` style="font-weight:bold;color:rgb(${(COR_STATUS[c]||[23,32,51]).join(',')})"`:''}>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
+  const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0;right:0;bottom:0';document.body.appendChild(f);
+  f.contentDocument.open();f.contentDocument.write(html);f.contentDocument.close();
+  setTimeout(()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),2000)},300);
+  alert('Sem conexão para gerar o PDF direto. Na janela de impressão, escolha "Salvar como PDF".');
+}
+/* ================= FIM RELATÓRIO PDF ================= */
+function filtrarKpi(st){dStatus.value=dStatus.value===st?'':st;renderDash()}
+function limparFiltrosDash(){dBusca.value='';dStatus.value='';dPeriodo.value='';dEmpresa.value='';renderDash()}
+function limparFiltros(){busca.value='';fStatus.value='';fEmpresa.value='';fResiduo.value='';fDataIni.value='';fDataFim.value='';fPlaca.value='';render()}
+iStatus.addEventListener('change',()=>{releaseBox.classList.toggle('show',(iStatus.value==='Em espera'||!!editandoId)&&pode('inspecao_liberar'));});
+iResiduo.addEventListener('change',mostrarToleranciaResiduo);
+/* Inspeção visual: selecionar todos */
+const CHECKS_VISUAL=['vIntegridade','vIdentificacao','vOdor','vEmbalagem','vEstranho','vVazamento'];
+function marcarTodosVisual(v){CHECKS_VISUAL.forEach(id=>document.getElementById(id).checked=v);sincronizarTodosVisual()}
+function sincronizarTodosVisual(){
+  const n=CHECKS_VISUAL.filter(id=>document.getElementById(id).checked).length;
+  vTodos.checked=n===CHECKS_VISUAL.length;vTodos.indeterminate=n>0&&n<CHECKS_VISUAL.length;
+}
+CHECKS_VISUAL.forEach(id=>document.getElementById(id).addEventListener('change',sincronizarTodosVisual));
+
+/* ================= VEÍCULOS E MOTORISTAS ================= */
+let editandoVeiculo=null;
+// Migração: motorista único + CNH -> lista de motoristas
+db.veiculos.forEach(v=>{
+  if(!Array.isArray(v.motoristas)){v.motoristas=v.motorista?[{nome:v.motorista,fone:v.fone||''}]:[]}
+  delete v.motorista;delete v.fone;delete v.cnh;
+});
+function normPlaca(p){return String(p||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}
+function fmtPlaca(p){const n=normPlaca(p);return /^[A-Z]{3}[0-9]{4}$/.test(n)?n.slice(0,3)+'-'+n.slice(3):n}
+function placaValida(p){return /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(normPlaca(p))}
+function veiculoDaPlaca(p){const n=normPlaca(p);return n?db.veiculos.find(v=>normPlaca(v.placa)===n):null}
+function nomesMot(v){return (v?.motoristas||[]).map(m=>m.nome)}
+function todosMotoristas(){return [...new Set(db.veiculos.flatMap(nomesMot))].sort((a,b)=>a.localeCompare(b))}
+function temMotorista(v,nome){const n=nome.trim().toLowerCase();return nomesMot(v).some(m=>m.toLowerCase()===n)}
+
+/* Formulário com vários motoristas */
+function addLinhaMotorista(nome='',fone='',foco=true){
+  const d=document.createElement('div');d.className='mot-linha';
+  d.innerHTML=`<input class="mNome" list="listaMotoristas" placeholder="Nome do motorista" autocomplete="off"><input class="mFone fone" placeholder="Telefone (opcional)"><button class="danger" title="Remover motorista" onclick="removerLinhaMotorista(this)">✕</button>`;
+  d.querySelector('.mNome').value=nome;d.querySelector('.mFone').value=fone;
+  veiMotoristas.appendChild(d);if(foco)d.querySelector('.mNome').focus();
+}
+function removerLinhaMotorista(btn){
+  if(veiMotoristas.children.length<=1){const l=btn.parentElement;l.querySelector('.mNome').value='';l.querySelector('.mFone').value='';return}
+  btn.parentElement.remove();
+}
+function lerMotoristasForm(){
+  const vistos=new Set(),lista=[];
+  veiMotoristas.querySelectorAll('.mot-linha').forEach(l=>{
+    const nome=l.querySelector('.mNome').value.trim(),fone=l.querySelector('.mFone').value.trim(),k=nome.toLowerCase();
+    if(nome&&!vistos.has(k)){vistos.add(k);lista.push({nome,fone})}
+  });
+  return lista;
+}
+function salvarVeiculo(){
+  if(!pode('veiculos_cadastrar'))return alert(SEM_PERMISSAO);
+  const placa=fmtPlaca(veiPlaca.value),motoristas=lerMotoristasForm();
+  if(!placaValida(placa))return alert('Placa inválida. Use o formato ABC-1234 ou Mercosul ABC1D23.');
+  if(!motoristas.length)return alert('Informe pelo menos um motorista vinculado à placa.');
+  const dup=veiculoDaPlaca(placa);
+  if(dup&&dup.id!==editandoVeiculo)return alert(`A placa ${placa} já está cadastrada. Use "Editar" para incluir ou remover motoristas.`);
+  const dados={placa,motoristas,tipo:veiTipo.value,transp:veiTransp.value.trim()};
+  if(editandoVeiculo){const v=db.veiculos.find(x=>x.id===editandoVeiculo);if(v)Object.assign(v,dados,{alteradoPor:atual.login,alteradoEm:new Date().toISOString()})}
+  else db.veiculos.push({id:crypto.randomUUID(),...dados,criadoPor:atual.login});
+  const msg=editandoVeiculo?'Veículo atualizado.':`Veículo cadastrado com ${motoristas.length} motorista${motoristas.length>1?'s':''} vinculado${motoristas.length>1?'s':''}.`;
+  limparVeiculo();persist();alert(msg);
+}
+function editarVeiculo(id){
+  if(!pode('veiculos_cadastrar'))return alert(SEM_PERMISSAO);
+  const v=db.veiculos.find(x=>x.id===id);if(!v)return;
+  editandoVeiculo=id;veiPlaca.value=v.placa;veiTipo.value=v.tipo||'';veiTransp.value=v.transp||'';
+  veiMotoristas.innerHTML='';(v.motoristas.length?v.motoristas:[{nome:'',fone:''}]).forEach(m=>addLinhaMotorista(m.nome,m.fone,false));
+  veiTitulo.textContent='Editar veículo '+v.placa;btnSalvarVeiculo.textContent='💾 Salvar alterações';btnCancelarVeiculo.style.display='inline-block';
+  formVeiculo.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function limparVeiculo(){
+  editandoVeiculo=null;veiPlaca.value=veiTransp.value='';veiTipo.value='';
+  veiMotoristas.innerHTML='';addLinhaMotorista('','',false);
+  veiTitulo.textContent='Cadastrar veículo';btnSalvarVeiculo.textContent='＋ Cadastrar veículo';btnCancelarVeiculo.style.display='none';
+}
+function excluirVeiculo(id){
+  if(!pode('veiculos_excluir'))return alert(SEM_PERMISSAO);
+  const v=db.veiculos.find(x=>x.id===id);
+  if(v&&confirm(`Excluir o veículo ${v.placa}? As inspeções já registradas não serão alteradas.`)){db.veiculos=db.veiculos.filter(x=>x.id!==id);if(editandoVeiculo===id)limparVeiculo();persist()}
+}
+function renderVeiculos(){
+  if(typeof veiTabela==='undefined')return;
+  const q=(veiBusca.value||'').toLowerCase().trim();
+  const arr=db.veiculos.filter(v=>!q||[v.placa,normPlaca(v.placa),...nomesMot(v),v.transp,v.tipo].join(' ').toLowerCase().includes(q)).sort((a,b)=>a.placa.localeCompare(b.placa));
+  veiTabela.innerHTML=arr.length?`<table><thead><tr><th>Placa</th><th>Motoristas vinculados</th><th>Tipo</th><th>Transportadora</th><th>Inspeções</th><th>Ações</th></tr></thead><tbody>${arr.map(v=>{
+    const n=db.inspecoes.filter(i=>normPlaca(i.placa)===normPlaca(v.placa)).length;
+    const mots=v.motoristas.length?`<div class="chips">${v.motoristas.map(m=>`<span class="chip">👤 ${esc(m.nome)}${m.fone?` <small>${esc(m.fone)}</small>`:''}</span>`).join('')}</div>`:'—';
+    const ac=[pode('veiculos_cadastrar')?`<button class="secondary" onclick="editarVeiculo('${v.id}')">✏️ Editar</button>`:'',pode('veiculos_excluir')?`<button class="danger" onclick="excluirVeiculo('${v.id}')">Excluir</button>`:''].join(' ').trim()||'—';
+    return `<tr><td><span class="placa">${esc(v.placa)}</span></td><td>${mots}</td><td>${esc(v.tipo||'—')}</td><td>${esc(v.transp||'—')}</td><td>${n}</td><td class="nowrap">${ac}</td></tr>`;
+  }).join('')}</tbody></table>`:`<div class="empty">${db.veiculos.length?'Nenhum veículo encontrado.':'Nenhum veículo cadastrado.'}</div>`;
+}
+
+/* Integração com a inspeção */
+function verificarPlaca(preencher){
+  const n=normPlaca(iPlaca.value),v=veiculoDaPlaca(iPlaca.value);
+  placaInfo.className='notice';
+  listaMotPlaca.innerHTML=(v?nomesMot(v):todosMotoristas()).map(m=>`<option value="${esc(m)}">`).join('');
+  if(!n)return;
+  const extra=v?`${v.tipo?' • '+esc(v.tipo):''}${v.transp?' • '+esc(v.transp):''}`:'';
+  if(v){
+    const nomes=nomesMot(v);
+    if(preencher&&nomes.length===1&&(!iMotorista.value.trim()||iMotorista.dataset.auto==='1')){iMotorista.value=nomes[0];iMotorista.dataset.auto='1'}
+    if(preencher&&nomes.length>1&&iMotorista.dataset.auto==='1'&&!temMotorista(v,iMotorista.value)){iMotorista.value='';iMotorista.dataset.auto=''}
+    const mot=iMotorista.value.trim();
+    if(mot&&!temMotorista(v,mot)){
+      placaInfo.innerHTML=`⚠️ <b>${esc(mot)}</b> não está vinculado à placa ${esc(v.placa)}. Vinculados: ${esc(nomes.join(', ')||'nenhum')}.`+(pode('veiculos_cadastrar')?`<button class="secondary" onclick="vincularDaInspecao()">＋ Vincular ${esc(mot)} a esta placa</button>`:'');
+      placaInfo.classList.add('show');
+    }else{
+      const botoes=nomes.length>1?`<div>${nomes.map(m=>`<button class="secondary escolha${m.toLowerCase()===mot.toLowerCase()?' sel':''}" onclick="escolherMotorista(this.dataset.nome)" data-nome="${esc(m)}">👤 ${esc(m)}</button>`).join('')}</div>`:'';
+      placaInfo.innerHTML=nomes.length>1
+        ?`🚛 Veículo cadastrado${extra}. ${mot?'Motorista selecionado: <b>'+esc(mot)+'</b>. Trocar:':'<b>Escolha o motorista:</b>'}${botoes}`
+        :`🚛 Veículo cadastrado${extra}. Motorista vinculado: <b>${esc(nomes[0]||'—')}</b>`;
+      placaInfo.classList.add('show','info-box');
+    }
+  }else if(n.length>=7){
+    const mot=iMotorista.value.trim();
+    placaInfo.innerHTML=`Esta placa ainda não está cadastrada.`+(pode('veiculos_cadastrar')?`<button class="secondary" onclick="vincularDaInspecao()">＋ Cadastrar ${esc(fmtPlaca(n))}${mot?' com '+esc(mot):''}</button>`:'');
+    placaInfo.classList.add('show');
+  }
+}
+function escolherMotorista(nome){iMotorista.value=nome;iMotorista.dataset.auto='1';verificarPlaca(false)}
+function vincularDaInspecao(){
+  if(!pode('veiculos_cadastrar'))return alert(SEM_PERMISSAO);
+  const placa=fmtPlaca(iPlaca.value),mot=iMotorista.value.trim();
+  if(!placaValida(placa))return alert('Placa inválida. Use o formato ABC-1234 ou Mercosul ABC1D23.');
+  if(!mot){alert('Informe o nome do motorista para vincular à placa.');return iMotorista.focus()}
+  const v=veiculoDaPlaca(placa);
+  if(v){if(!temMotorista(v,mot))v.motoristas.push({nome:mot,fone:''});v.alteradoPor=atual.login;v.alteradoEm=new Date().toISOString()}
+  else db.veiculos.push({id:crypto.randomUUID(),placa,motoristas:[{nome:mot,fone:''}],tipo:'',transp:'',criadoPor:atual.login});
+  iPlaca.value=placa;iMotorista.dataset.auto='';persist();verificarPlaca(false);
+}
+iPlaca.addEventListener('input',()=>verificarPlaca(true));
+iPlaca.addEventListener('blur',()=>{const f=fmtPlaca(iPlaca.value);if(placaValida(f)&&f!==iPlaca.value){iPlaca.value=f;verificarPlaca(true)}});
+iMotorista.addEventListener('input',()=>{iMotorista.dataset.auto='';verificarPlaca(false)});
+veiPlaca.addEventListener('blur',()=>{if(placaValida(veiPlaca.value))veiPlaca.value=fmtPlaca(veiPlaca.value)});
+addLinhaMotorista('','',false);
+/* ================= FIM VEÍCULOS ================= */
+iLiberado.addEventListener('change',()=>{if(!pode('inspecao_liberar')){iLiberado.checked=false;return}if(iLiberado.checked&&editandoId)iStatus.value='Liberado';});
+function atualizarTudo(){
+  preencherSelects();atualizarFiltros();render();
+  if(atual){renderUsuarios();aplicarPermissoes();}
+}
+
+/* ----- Inicialização com login ----- */
+iData.value=new Date().toISOString().slice(0,16);
+(function(){
+  const sid=sessionStorage.getItem(SESSAO),su=db.usuarios.find(x=>x.id===sid&&x.ativo);
+  if(su)entrar(su);else iniciarAuth();
+})();
+</script>
+</body>
+</html>
