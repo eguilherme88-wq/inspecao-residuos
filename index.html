@@ -58,6 +58,9 @@ body.locked>aside,body.locked>header,body.locked>.container,body.locked>.bottom-
 .auth-erro{color:#b42318;font-size:13px;margin-top:10px}.auth-erro:empty{display:none}
 .modal{display:none;position:fixed;inset:0;background:#10182880;z-index:90;align-items:center;justify-content:center;padding:20px}.modal.show{display:flex}
 .modal-card{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:400px}.modal-card label{margin-top:12px}
+.teste-aviso{display:none;margin-bottom:18px;padding:12px 16px;border-radius:12px;background:#fffaeb;color:#93370d;border:1px solid #fedf89;font-size:14px;line-height:1.45}.teste-aviso.show{display:block}.teste-aviso.urgente{background:#fef3f2;color:#912018;border-color:#fecdca}
+.teste-cel small{display:block;color:var(--muted);font-size:12px;margin-top:4px}.teste-cel button{margin-top:6px;padding:6px 10px;font-size:12px}
+.teste-rapido{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.teste-rapido button{flex:1;padding:8px}
 .role-admin{background:#f4ebff;color:#6941c6}.role-master{background:#eff8ff;color:#175cd3}.role-usuario{background:#f2f4f7;color:#344054}
 th.c,td.c{text-align:center}td.c input{width:18px;height:18px;cursor:pointer}tr.grp td{background:#f8fafc;font-weight:800;font-size:12px;color:var(--muted)}
 /* ===== Painel com pictogramas e filtros ===== */
@@ -250,6 +253,7 @@ html[data-theme="dark"] .ok{background:#0f2e22;color:#6ce9a6}
 html[data-theme="dark"] .warn{background:#33270f;color:#fdb022}
 html[data-theme="dark"] .bad{background:#3a1a1a;color:#fda29b}
 html[data-theme="dark"] .info{background:#132a4a;color:#84caff}
+html[data-theme="dark"] .teste-aviso{background:#33270f;color:#fdb022;border-color:#5c4210}html[data-theme="dark"] .teste-aviso.urgente{background:#3a1512;color:#fda29b;border-color:#6b2420}
 html[data-theme="dark"] .role-admin{background:#2b1f4a;color:#c4b5fd}html[data-theme="dark"] .role-master{background:#132a4a;color:#84caff}html[data-theme="dark"] .role-usuario{background:#243049;color:#cbd5e1}
 html[data-theme="dark"] .ico.azul{background:#1a2c52;color:#84adff}html[data-theme="dark"] .ico.verde{background:#0f2e22;color:#6ce9a6}html[data-theme="dark"] .ico.ambar{background:#33270f;color:#fdb022}html[data-theme="dark"] .ico.vermelho{background:#3a1a1a;color:#fda29b}html[data-theme="dark"] .ico.cinza{background:#243049;color:#cbd5e1}
 html[data-theme="dark"] .kpi.click:hover{border-color:#3b5ea8}html[data-theme="dark"] #kpiGrid.filtrado .kpi{background:#172340;border-color:#3b5ea8}
@@ -316,6 +320,18 @@ html[data-theme="dark"] [style*="color:#667085"]{color:var(--muted)!important}
   </div>
 </div>
 
+<div id="modalTeste" class="modal">
+  <div class="modal-card">
+    <h2 class="title" id="mtTitulo">Período de teste</h2>
+    <p class="muted" id="mtSub" style="margin-top:-4px"></p>
+    <label>Início</label><input id="mtIni" type="date">
+    <label>Fim (último dia de acesso)</label><input id="mtFim" type="date">
+    <div class="teste-rapido"><button class="secondary" onclick="testeRapido(7)">7 dias</button><button class="secondary" onclick="testeRapido(15)">15 dias</button><button class="secondary" onclick="testeRapido(30)">30 dias</button></div>
+    <div id="mtErro" class="auth-erro"></div>
+    <div class="actions"><button class="primary" onclick="salvarTeste()">💾 Salvar período</button><button class="danger" id="mtRemover" onclick="removerTeste()">Remover teste</button><button class="secondary" onclick="fecharModalTeste()">Cancelar</button></div>
+  </div>
+</div>
+
 <div class="menu-overlay" onclick="toggleMenu(false)"></div>
 <aside class="sidebar">
   <div class="brand">
@@ -368,6 +384,7 @@ html[data-theme="dark"] [style*="color:#667085"]{color:var(--muted)!important}
 </nav>
 
 <div class="container">
+  <div id="testeAviso" class="teste-aviso" role="status"></div>
   <div class="grid" id="kpiGrid">
     <div class="card kpi click" data-kpi="" onclick="filtrarKpi('')" title="Mostrar todas">
       <div class="ico azul"><svg viewBox="0 0 24 24"><path d="M9 3h6v3H9z"/><path d="M9 4.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5.5a1 1 0 0 0-1-1h-3"/><path d="m9 14 2 2 4-4"/></svg></div>
@@ -606,6 +623,11 @@ html[data-theme="dark"] [style*="color:#667085"]{color:var(--muted)!important}
         <div><label>Senha inicial</label><input id="uNovoSenha" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres"></div>
         <div><label>Perfil</label><select id="uNovoPerfil"></select></div>
       </div>
+      <div class="row4" id="uTesteBox" style="margin-top:12px">
+        <div><label>Período de teste: início</label><input id="uNovoTesteIni" type="date"></div>
+        <div><label>Período de teste: fim</label><input id="uNovoTesteFim" type="date"></div>
+      </div>
+      <p class="muted small" id="uTesteDica" style="margin:8px 0 0"></p>
       <div class="actions"><button class="primary" onclick="salvarUsuario()">＋ Cadastrar usuário</button></div>
     </div>
     <div class="card form-card"><h2 class="title">Usuários cadastrados</h2><div id="usuTabela"></div></div>
@@ -722,6 +744,8 @@ async function enviarAuth(){
   const u=db.usuarios.find(x=>x.login===login);
   if(!u||await hashSenha(senha,u.salt)!==u.hash){aSenha.value='';return authErro.textContent='Usuário ou senha incorretos.'}
   if(!u.ativo)return authErro.textContent='Este usuário está bloqueado. Procure o administrador.';
+  const bt=bloqueioTeste(u);
+  if(bt){aSenha.value='';return authErro.textContent=bt}
   entrar(u);
 }
 function entrar(u){
@@ -731,10 +755,11 @@ function entrar(u){
   limparInspecao();atualizarTudo();abrirPrimeira();
 }
 function sair(){
-  atual=null;editandoId=null;sessionStorage.removeItem(SESSAO);fecharModal();iniciarAuth();
+  atual=null;editandoId=null;sessionStorage.removeItem(SESSAO);fecharModal();fecharModalTeste();testeAviso.className='teste-aviso';iniciarAuth();
 }
 function aplicarPermissoes(){
   if(!atual)return;
+  renderAvisoTeste();
   uNome.textContent=uNomeM.textContent=atual.nome;uPerfil.textContent=uPerfilM.textContent=PERFIS[atual.perfil];
   document.querySelector('.uh-perfil').title=`${atual.nome} (${PERFIS[atual.perfil]})`;
   uAvatar.textContent=atual.nome.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
@@ -750,6 +775,107 @@ function aplicarPermissoes(){
   if(!ativa||(ativa.id==='semacesso'?SECOES.some(podeSecao):!podeSecao(ativa.id)))abrirPrimeira();
 }
 
+/* ----- Período de teste ----- */
+function isoLocal(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function hojeISO(){return isoLocal(new Date())}
+function somaDias(iso,n){const [y,m,d]=iso.split('-').map(Number);return isoLocal(new Date(y,m-1,d+n))}
+function fmtTeste(iso){return iso?iso.split('-').reverse().join('/'):'—'}
+function diasAte(iso){const [y,m,d]=iso.split('-').map(Number),h=new Date();return Math.round((new Date(y,m-1,d)-new Date(h.getFullYear(),h.getMonth(),h.getDate()))/864e5)}
+// Master que cadastrou o usuário (só conta enquanto ele continuar com perfil Master)
+function masterDe(u){if(!u?.criadoPorId)return null;const m=db.usuarios.find(x=>x.id===u.criadoPorId);return m&&m.perfil==='master'?m:null}
+// Período de teste que vale para o usuário: o do Master que o cadastrou, se houver; senão, o dele próprio
+function testeDe(u){
+  if(!u||u.perfil==='admin')return null;
+  const m=masterDe(u);
+  if(m?.teste)return {...m.teste,herdadoDe:m};
+  return u.teste||null;
+}
+function situacaoTeste(t){if(!t)return null;const h=hojeISO();if(t.inicio&&h<t.inicio)return 'agendado';if(h>t.fim)return 'encerrado';return 'ativo'}
+function bloqueioTeste(u){
+  const t=testeDe(u),s=situacaoTeste(t);
+  if(s==='encerrado')return `O período de teste terminou em ${fmtTeste(t.fim)}. Procure o administrador para continuar usando o sistema.`;
+  if(s==='agendado')return `Seu período de teste começa em ${fmtTeste(t.inicio)}.`;
+  return '';
+}
+// Se um Master deixa de existir (ou de ser Master), seus usuários mantêm o período que estava valendo
+function congelarTesteDosUsuarios(m){
+  if(!m?.teste)return;
+  db.usuarios.forEach(x=>{if(x.criadoPorId===m.id)x.teste={...m.teste}});
+}
+function renderAvisoTeste(){
+  const t=testeDe(atual);
+  if(situacaoTeste(t)!=='ativo'){testeAviso.className='teste-aviso';testeAviso.innerHTML='';return}
+  const d=diasAte(t.fim);
+  const quando=d===0?'termina hoje':d===1?'termina amanhã':`termina em ${d} dias`;
+  testeAviso.className='teste-aviso show'+(d<=3?' urgente':'');
+  testeAviso.innerHTML=`⏳ <b>Você está em período de teste</b>, que ${quando} (${fmtTeste(t.inicio)} a ${fmtTeste(t.fim)}).`
+    +(atual.perfil==='master'?' Os usuários que você cadastrar seguem o mesmo período.':'')
+    +' Para continuar usando depois dessa data, fale com o administrador.';
+}
+function verificarTesteSessao(){
+  if(!atual)return false;
+  const msg=bloqueioTeste(atual);
+  if(!msg)return false;
+  sair();authErro.textContent=msg;return true;
+}
+setInterval(verificarTesteSessao,60000);
+
+let testeAlvo=null;
+function abrirModalTeste(id){
+  if(atual?.perfil!=='admin')return alert(SEM_PERMISSAO);
+  const u=db.usuarios.find(x=>x.id===id);
+  if(!u||u.perfil==='admin')return;
+  const m=masterDe(u);
+  if(m?.teste)return alert(`Este usuário segue o período de teste do Master ${m.nome}, que o cadastrou. Para mudar, altere o período do Master.`);
+  testeAlvo=id;
+  const n=db.usuarios.filter(x=>x.criadoPorId===u.id).length;
+  mtTitulo.textContent=`Período de teste de ${u.nome}`;
+  mtSub.textContent=u.perfil==='master'
+    ?`Todos os usuários cadastrados por este Master ficam no mesmo período${n?` (${n} cadastrado${n>1?'s':''} até agora)`:''}. Quando o período termina, o acesso de todos é bloqueado.`
+    :'Quando o período termina, o acesso é bloqueado até você alterar ou remover o teste.';
+  mtIni.value=u.teste?.inicio||hojeISO();mtFim.value=u.teste?.fim||'';
+  mtRemover.style.display=u.teste?'':'none';mtErro.textContent='';
+  modalTeste.classList.add('show');setTimeout(()=>mtFim.focus(),50);
+}
+function fecharModalTeste(){modalTeste.classList.remove('show');testeAlvo=null}
+function testeRapido(n){const i=mtIni.value||hojeISO();mtIni.value=i;mtFim.value=somaDias(i,n-1)}
+function validarPeriodo(ini,fim){
+  if(!fim)return 'Informe a data de fim do período de teste.';
+  if(fim<ini)return 'A data de fim deve ser igual ou posterior à data de início.';
+  return '';
+}
+function salvarTeste(){
+  if(atual?.perfil!=='admin')return mtErro.textContent=SEM_PERMISSAO;
+  const u=db.usuarios.find(x=>x.id===testeAlvo);if(!u)return fecharModalTeste();
+  const ini=mtIni.value||hojeISO(),fim=mtFim.value,erro=validarPeriodo(ini,fim);
+  if(erro)return mtErro.textContent=erro;
+  u.teste={inicio:ini,fim,definidoPor:atual.id,definidoEm:new Date().toISOString()};
+  fecharModalTeste();persist();
+}
+function removerTeste(){
+  if(atual?.perfil!=='admin')return alert(SEM_PERMISSAO);
+  const u=db.usuarios.find(x=>x.id===testeAlvo);if(!u)return fecharModalTeste();
+  const n=u.perfil==='master'?db.usuarios.filter(x=>x.criadoPorId===u.id).length:0;
+  if(!confirm(`Remover o período de teste de ${u.nome}?${n?` Os ${n} usuário(s) cadastrados por ele também deixam de estar em teste.`:''}`))return;
+  delete u.teste;fecharModalTeste();persist();
+}
+function celulaTeste(u,admin){
+  if(u.perfil==='admin')return '<span class="muted">—</span>';
+  const t=testeDe(u),s=situacaoTeste(t);
+  let html;
+  if(!t)html='<span class="muted">Sem teste</span>';
+  else{
+    const cls={ativo:'warn',encerrado:'bad',agendado:'info'}[s];
+    const d=diasAte(t.fim);
+    const rot=s==='encerrado'?'Teste encerrado':s==='agendado'?'Teste agendado':d===0?'Em teste, último dia':`Em teste, ${d} dia${d>1?'s':''}`;
+    html=`<span class="badge ${cls}">${rot}</span><small>${fmtTeste(t.inicio)} a ${fmtTeste(t.fim)}</small>`;
+    if(t.herdadoDe)html+=`<small>Segue o Master ${esc(t.herdadoDe.nome)}</small>`;
+    else if(u.perfil==='master'){const n=db.usuarios.filter(x=>x.criadoPorId===u.id).length;if(n)html+=`<small>Vale também para ${n} usuário${n>1?'s':''} dele</small>`}
+  }
+  if(admin&&!t?.herdadoDe)html+=`<br><button class="secondary" onclick="abrirModalTeste('${u.id}')">⏳ ${u.teste?'Alterar teste':'Definir teste'}</button>`;
+  return `<div class="teste-cel">${html}</div>`;
+}
+
 /* ----- Usuários ----- */
 async function salvarUsuario(){
   const nome=uNovoNome.value.trim(),login=uNovoLogin.value.trim().toLowerCase(),senha=uNovoSenha.value,perfil=uNovoPerfil.value;
@@ -758,13 +884,28 @@ async function salvarUsuario(){
   if(/\s/.test(login))return alert('O usuário (login) não pode conter espaços.');
   if(db.usuarios.some(u=>u.login===login))return alert('Já existe um usuário com esse login.');
   if(senha.length<6)return alert('A senha deve ter pelo menos 6 caracteres.');
-  db.usuarios.push(await novoUsuario(nome,login,senha,perfil));
-  uNovoNome.value=uNovoLogin.value=uNovoSenha.value='';persist();alert('Usuário cadastrado.');
+  let teste=null;
+  if(atual.perfil==='admin'&&(uNovoTesteIni.value||uNovoTesteFim.value)){
+    if(perfil==='admin')return alert('Administradores não têm período de teste. Deixe as datas em branco.');
+    const ini=uNovoTesteIni.value||hojeISO(),fim=uNovoTesteFim.value,erro=validarPeriodo(ini,fim);
+    if(erro)return alert(erro);
+    teste={inicio:ini,fim,definidoPor:atual.id,definidoEm:new Date().toISOString()};
+  }
+  const novo=await novoUsuario(nome,login,senha,perfil);
+  novo.criadoPorId=atual.id;
+  if(teste)novo.teste=teste;
+  db.usuarios.push(novo);
+  uNovoNome.value=uNovoLogin.value=uNovoSenha.value=uNovoTesteIni.value=uNovoTesteFim.value='';persist();
+  const t=testeDe(novo);
+  alert(t?`Usuário cadastrado. Ele está em período de teste até ${fmtTeste(t.fim)}.`:'Usuário cadastrado.');
 }
 function alterarPerfil(id,perfil){
   const u=db.usuarios.find(x=>x.id===id);
   if(atual?.perfil!=='admin'||!u||u.id===atual.id)return alert(SEM_PERMISSAO);
-  u.perfil=perfil;persist();
+  if(u.perfil==='master'&&perfil!=='master')congelarTesteDosUsuarios(u);
+  u.perfil=perfil;
+  if(perfil==='admin')delete u.teste;
+  persist();
 }
 function alternarAtivo(id){
   const u=db.usuarios.find(x=>x.id===id);
@@ -774,7 +915,7 @@ function alternarAtivo(id){
 function excluirUsuario(id){
   const u=db.usuarios.find(x=>x.id===id);
   if(!podeGerir(u)||u.id===atual.id)return alert(SEM_PERMISSAO);
-  if(confirm(`Excluir o usuário "${u.nome}"?`)){db.usuarios=db.usuarios.filter(x=>x.id!==id);persist()}
+  if(confirm(`Excluir o usuário "${u.nome}"?`)){congelarTesteDosUsuarios(u);db.usuarios=db.usuarios.filter(x=>x.id!==id);persist()}
 }
 function definirPermissao(perfil,chave,valor){
   if(atual?.perfil!=='admin')return alert(SEM_PERMISSAO);
@@ -790,15 +931,20 @@ function renderUsuarios(){
   const pSel=uNovoPerfil.value;
   uNovoPerfil.innerHTML=(admin?['usuario','master','admin']:['usuario']).map(p=>`<option value="${p}">${PERFIS[p]}</option>`).join('');
   if([...uNovoPerfil.options].some(o=>o.value===pSel))uNovoPerfil.value=pSel;
+  uTesteBox.style.display=admin?'':'none';
+  const meuTeste=testeDe(atual);
+  uTesteDica.textContent=admin?'Opcional. Com período de teste, o acesso é bloqueado depois da data de fim. Usuários cadastrados por um Master em teste entram automaticamente no mesmo período.'
+    :meuTeste?`Você está em período de teste até ${fmtTeste(meuTeste.fim)}. Os usuários que você cadastrar entram automaticamente no mesmo período.`:'';
+  uTesteDica.style.display=uTesteDica.textContent?'':'none';
   const lista=db.usuarios.filter(u=>admin||u.perfil==='usuario'||u.id===atual.id);
-  usuTabela.innerHTML=lista.length?`<table><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Situação</th><th>Último acesso</th><th>Ações</th></tr></thead><tbody>${lista.map(u=>{
+  usuTabela.innerHTML=lista.length?`<table><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Situação</th><th>Período de teste</th><th>Último acesso</th><th>Ações</th></tr></thead><tbody>${lista.map(u=>{
     const eu=u.id===atual.id,gerir=podeGerir(u)&&!eu;
     const perfil=admin&&!eu
       ?`<select onchange="alterarPerfil('${u.id}',this.value)" style="width:auto;padding:6px 8px">${['usuario','master','admin'].map(p=>`<option value="${p}"${u.perfil===p?' selected':''}>${PERFIS[p]}</option>`).join('')}</select>`
       :`<span class="badge role-${u.perfil}">${PERFIS[u.perfil]}</span>`;
     const acoes=eu?`<button class="secondary" onclick="abrirModalSenha()">🔑 Minha senha</button>`
       :gerir?`<button class="secondary" onclick="abrirModalSenha('${u.id}')">🔑 Redefinir senha</button> <button class="warning" onclick="alternarAtivo('${u.id}')">${u.ativo?'Bloquear':'Desbloquear'}</button> <button class="danger" onclick="excluirUsuario('${u.id}')">Excluir</button>`:'—';
-    return `<tr><td>${esc(u.nome)}${eu?' <span class="muted">(você)</span>':''}</td><td>${esc(u.login)}</td><td>${perfil}</td><td>${u.ativo?'<span class="badge ok">Ativo</span>':'<span class="badge bad">Bloqueado</span>'}</td><td>${u.ultimoAcesso?new Date(u.ultimoAcesso).toLocaleString('pt-BR'):'—'}</td><td class="nowrap">${acoes}</td></tr>`;
+    return `<tr><td>${esc(u.nome)}${eu?' <span class="muted">(você)</span>':''}</td><td>${esc(u.login)}</td><td>${perfil}</td><td>${u.ativo?'<span class="badge ok">Ativo</span>':'<span class="badge bad">Bloqueado</span>'}</td><td>${celulaTeste(u,admin)}</td><td>${u.ultimoAcesso?new Date(u.ultimoAcesso).toLocaleString('pt-BR'):'—'}</td><td class="nowrap">${acoes}</td></tr>`;
   }).join('')}</tbody></table>`:'<div class="empty">Nenhum usuário cadastrado.</div>';
   renderPermissoes();
 }
@@ -839,7 +985,7 @@ async function confirmarSenha(){
 }
 [aNome,aLogin,aSenha,aSenha2].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')enviarAuth()}));
 [mAtual,mNova,mConf].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')confirmarSenha()}));
-document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){fecharModal();fecharModalTeste()}});
 /* ================= FIM CONTROLE DE ACESSO ================= */
 
 function persist(){localStorage.setItem(KEY,JSON.stringify(db));atualizarTudo()}
@@ -1716,14 +1862,14 @@ addLinhaMotorista('','',false);
 iLiberado.addEventListener('change',()=>{if(!pode('inspecao_liberar')){iLiberado.checked=false;return}if(iLiberado.checked&&editandoId)iStatus.value='Liberado';});
 function atualizarTudo(){
   preencherSelects();atualizarFiltros();render();
-  if(atual){renderUsuarios();aplicarPermissoes();renderAvisos();}
+  if(atual&&!verificarTesteSessao()){renderUsuarios();aplicarPermissoes();renderAvisos();}
 }
 
 /* ----- Inicialização com login ----- */
 iData.value=new Date().toISOString().slice(0,16);
 (function(){
   const sid=sessionStorage.getItem(SESSAO),su=db.usuarios.find(x=>x.id===sid&&x.ativo);
-  if(su)entrar(su);else iniciarAuth();
+  if(su&&!bloqueioTeste(su))entrar(su);else iniciarAuth();
 })();
 </script>
 <script>
