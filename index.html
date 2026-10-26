@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script src="https://www.gstatic.com/firebasejs/13.1.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/13.1.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore-compat.js"></script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#102a56">
@@ -293,7 +297,7 @@ html[data-theme="dark"] [style*="color:#667085"]{color:var(--muted)!important}
     <h2 id="authTitulo"></h2>
     <p class="muted" id="authSub" style="margin:0">Entre com seu usuário e senha</p>
     <div id="authSetup" style="display:none"><label>Nome completo</label><input id="aNome"></div>
-    <label>Usuário</label><input id="aLogin" autocomplete="username" autocapitalize="none">
+    <label>E-mail cadastrado no Firebase</label><input type="email" id="aLogin" autocomplete="username" autocapitalize="none">
     <label>Senha</label><input id="aSenha" type="password" autocomplete="current-password">
     <div id="authSetup2" style="display:none"><label>Confirmar senha</label><input id="aSenha2" type="password"></div>
     <div id="authErro" class="auth-erro"></div>
@@ -346,6 +350,7 @@ html[data-theme="dark"] [style*="color:#667085"]{color:var(--muted)!important}
     <button class="tab" data-sec="veiculos" onclick="abrir('veiculos',this)">🚛 Veículos e motoristas</button>
     <button class="tab" data-sec="residuos" onclick="abrir('residuos',this)">♻️ Resíduos</button>
     <button class="tab" data-sec="avisos" onclick="abrir('avisos',this)">📢 Avisos</button>
+    <button class="tab" data-sec="matriz" onclick="abrir('matriz',this)">🔐 Matriz de acesso</button>
     <button class="tab" data-sec="usuarios" onclick="abrir('usuarios',this)">👥 Usuários e acessos</button>
   </nav>
   <div class="links-ext">
@@ -616,24 +621,35 @@ html[data-theme="dark"] [style*="color:#667085"]{color:var(--muted)!important}
   </section>
 
   <section id="usuarios" class="section">
+    <div class="card" id="firebaseSetupCard"><h2 class="title">Ativar acesso para novas contas</h2>
+    <p>Antes do primeiro cadastro, copie as regras abaixo e publique no console Firebase em <b>Firestore → Regras</b>, substituindo o conteúdo atual. Essa configuração permite validar os perfis e os prazos de teste no banco.</p>
+    <button class="secondary" onclick="copiarRegras()">📋 Copiar regras do Firebase</button>
+    <details><summary>Mostrar regras para copiar manualmente</summary><textarea id="regrasTexto" readonly style="width:100%;min-height:260px;margin-top:12px"></textarea></details></div>
     <div class="card form-card"><h2 class="title">Cadastrar usuário</h2>
       <div class="row4">
         <div><label>Nome completo</label><input id="uNovoNome"></div>
-        <div><label>Usuário (login)</label><input id="uNovoLogin" autocomplete="off" autocapitalize="none"></div>
+        <div><label>E-mail de acesso</label><input type="email" id="uNovoLogin" autocomplete="off" autocapitalize="none"></div>
         <div><label>Senha inicial</label><input id="uNovoSenha" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres"></div>
         <div><label>Perfil</label><select id="uNovoPerfil"></select></div>
       </div>
-      <div class="row4" id="uTesteBox" style="margin-top:12px">
+      <div id="uTesteBox" style="margin-top:12px">
+        <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="uTeste30" onchange="configurarTeste30()" style="width:auto"> Liberar teste de 30 dias a partir de hoje</label>
+        <div class="row" style="margin-top:12px">
         <div><label>Período de teste: início</label><input id="uNovoTesteIni" type="date"></div>
         <div><label>Período de teste: fim</label><input id="uNovoTesteFim" type="date"></div>
       </div>
+      </div>
       <p class="muted small" id="uTesteDica" style="margin:8px 0 0"></p>
-      <div class="actions"><button class="primary" onclick="salvarUsuario()">＋ Cadastrar usuário</button></div>
+      <div class="actions"><button id="btnCadastrarUsuario" class="primary" onclick="salvarUsuario()">＋ Cadastrar usuário</button></div>
     </div>
     <div class="card form-card"><h2 class="title">Usuários cadastrados</h2><div id="usuTabela"></div></div>
-    <div class="card" id="permCard"><h2 class="title">Permissões por perfil</h2>
-      <p class="muted" style="margin-top:-6px">O administrador sempre tem acesso total. Marque o que o Master e o Usuário podem fazer — cada alteração vale na hora.</p>
-      <div style="overflow-x:auto"><div id="permTabela"></div></div>
+
+  </section>
+
+  <section id="matriz" class="section">
+    <div class="card" id="permCard"><h2 class="title">Matriz de acesso</h2>
+      <p class="muted" style="margin-top:-6px">O Administrador tem acesso total e configura a matriz. Marque as ações permitidas para Master e Usuário. As alterações são salvas automaticamente no Firebase.</p>
+      <div class="row row3" style="margin:16px 0"><div class="card"><b>Administrador</b><p>Acesso total, configuração de permissões e administração do sistema.</p></div><div class="card"><b>Master</b><p>Acesso às operações conforme as permissões marcadas abaixo.</p></div><div class="card"><b>Usuário</b><p>Acesso limitado às atividades autorizadas na matriz.</p></div></div><p class="muted">Novas contas são cadastradas em Usuários e acessos. O prazo de teste e as permissões também são verificados pelas regras do Firebase.</p><p id="matrizStatus" role="status" aria-live="polite"></p><div style="overflow-x:auto"><div id="permTabela"></div></div>
       <div class="actions"><button class="secondary" onclick="restaurarPermissoes()">↺ Restaurar permissões padrão</button></div>
     </div>
   </section>
@@ -646,7 +662,7 @@ html[data-theme="dark"] [style*="color:#667085"]{color:var(--muted)!important}
 </div>
 
 <script>
-const KEY='inspecoes_residuos_v1';
+const KEY='inspecoes_residuos_firebase_v1';
 let db=JSON.parse(localStorage.getItem(KEY)||'null')||{empresas:[],residuos:[],inspecoes:[]};
 // Converte status antigos das inspeções já salvas
 {const MAPA={'Aprovada':'Liberado','Aprovada com observação':'Liberado com observação','Reprovada':'Não liberado'};
@@ -701,7 +717,7 @@ async function novoUsuario(nome,login,senha,perfil){
   return {id:crypto.randomUUID(),nome,login,perfil,ativo:true,salt,hash:await hashSenha(senha,salt),criadoEm:new Date().toISOString()};
 }
 function pode(p){if(!atual)return false;if(atual.perfil==='admin')return true;return !!db.permissoes[atual.perfil]?.[p]}
-function podeGerir(u){if(!atual||!u)return false;if(atual.perfil==='admin')return true;return pode('usuarios_gerenciar')&&u.perfil==='usuario'}
+function podeGerir(u){if(!atual||!u)return false;if(atual.perfil==='admin')return true;return atual.perfil==='master'&&pode('usuarios_gerenciar')&&u.perfil==='usuario'&&u.criadoPorId===atual.id}
 function podeSecao(id){
   if(!atual)return false;
   switch(id){
@@ -713,48 +729,37 @@ function podeSecao(id){
     case 'veiculos':return pode('veiculos_ver');
     case 'residuos':return pode('residuos_ver');
     case 'avisos':return pode('avisos_gerenciar');
-    case 'usuarios':return atual.perfil==='admin'||pode('usuarios_gerenciar');
+    case 'matriz':return atual.perfil==='admin';
+    case 'usuarios':return atual.perfil==='admin'||(atual.perfil==='master'&&pode('usuarios_gerenciar'));
   }
   return false;
 }
-const SECOES=['dashboard','inspecao','historico','planilha','empresas','veiculos','residuos','avisos','usuarios'];
+const SECOES=['dashboard','inspecao','historico','planilha','empresas','veiculos','residuos','avisos','usuarios','matriz'];
 function abrirPrimeira(){const s=SECOES.find(podeSecao);abrir(s||'semacesso')}
 
 function iniciarAuth(){
-  const setup=!db.usuarios.length;
-  document.body.classList.add('locked');
-  authSetup.style.display=authSetup2.style.display=setup?'block':'none';
-  authTitulo.textContent=setup?'Primeiro acesso':'';
-  authSub.textContent=setup?'Crie a conta do administrador do sistema.':'Entre com seu usuário e senha.';
-  authBtn.textContent=setup?'Criar administrador e entrar':'Entrar';
-  aSenha.value=aSenha2.value='';authErro.textContent='';
-  setTimeout(()=>(setup?aNome:aLogin).focus(),50);
+ document.body.classList.add('locked');
+ authSetup.style.display=authSetup2.style.display='none';
+ authTitulo.textContent='Acesso ao Firebase';
+ authSub.textContent='Entre com o e-mail e a senha cadastrados em Authentication.';
+ authBtn.textContent='Entrar';authBtn.disabled=false;aSenha.value='';authErro.textContent='';
 }
 async function enviarAuth(){
-  authErro.textContent='';
-  const login=aLogin.value.trim().toLowerCase(),senha=aSenha.value;
-  if(!db.usuarios.length){
-    if(!aNome.value.trim()||!login)return authErro.textContent='Informe nome e usuário.';
-    if(/\s/.test(login))return authErro.textContent='O usuário não pode conter espaços.';
-    if(senha.length<6)return authErro.textContent='A senha deve ter pelo menos 6 caracteres.';
-    if(senha!==aSenha2.value)return authErro.textContent='As senhas não conferem.';
-    const u=await novoUsuario(aNome.value.trim(),login,senha,'admin');
-    db.usuarios.push(u);aNome.value='';entrar(u);return;
-  }
-  const u=db.usuarios.find(x=>x.login===login);
-  if(!u||await hashSenha(senha,u.salt)!==u.hash){aSenha.value='';return authErro.textContent='Usuário ou senha incorretos.'}
-  if(!u.ativo)return authErro.textContent='Este usuário está bloqueado. Procure o administrador.';
-  const bt=bloqueioTeste(u);
-  if(bt){aSenha.value='';return authErro.textContent=bt}
-  entrar(u);
+ if(authBtn.disabled)return;
+ authBtn.disabled=true;authErro.textContent='Conectando...';
+ try{
+  if(!window.firebase)throw Error('Não foi possível carregar o Firebase. Verifique sua conexão.');
+  await cloudAuth.signInWithEmailAndPassword(aLogin.value.trim(),aSenha.value);
+ }catch(e){authErro.textContent=mensagemCloud(e);authBtn.disabled=false;}
 }
 function entrar(u){
   atual=u;sessionStorage.setItem(SESSAO,u.id);
-  u.ultimoAcesso=new Date().toISOString();localStorage.setItem(KEY,JSON.stringify(db));
+  localStorage.setItem(KEY,JSON.stringify(db));
   document.body.classList.remove('locked');aLogin.value=aSenha.value='';
   limparInspecao();atualizarTudo();abrirPrimeira();
 }
 function sair(){
+ cloudReady=false;if(cloudAuth)cloudAuth.signOut();
   atual=null;editandoId=null;sessionStorage.removeItem(SESSAO);fecharModal();fecharModalTeste();testeAviso.className='teste-aviso';iniciarAuth();
 }
 function aplicarPermissoes(){
@@ -816,9 +821,9 @@ function verificarTesteSessao(){
   if(!atual)return false;
   const msg=bloqueioTeste(atual);
   if(!msg)return false;
-  sair();authErro.textContent=msg;return true;
+  bloquearAcessoConfirmado(msg);return true;
 }
-setInterval(verificarTesteSessao,60000);
+// A sessão remota é verificada por um único monitor, sem encerrar o login por timer local.
 
 let testeAlvo=null;
 function abrirModalTeste(id){
@@ -877,28 +882,48 @@ function celulaTeste(u,admin){
 }
 
 /* ----- Usuários ----- */
-async function salvarUsuario(){
-  const nome=uNovoNome.value.trim(),login=uNovoLogin.value.trim().toLowerCase(),senha=uNovoSenha.value,perfil=uNovoPerfil.value;
-  if(!(atual?.perfil==='admin'||(pode('usuarios_gerenciar')&&perfil==='usuario')))return alert(SEM_PERMISSAO);
-  if(!nome||!login)return alert('Informe nome e usuário (login).');
-  if(/\s/.test(login))return alert('O usuário (login) não pode conter espaços.');
-  if(db.usuarios.some(u=>u.login===login))return alert('Já existe um usuário com esse login.');
-  if(senha.length<6)return alert('A senha deve ter pelo menos 6 caracteres.');
-  let teste=null;
-  if(atual.perfil==='admin'&&(uNovoTesteIni.value||uNovoTesteFim.value)){
-    if(perfil==='admin')return alert('Administradores não têm período de teste. Deixe as datas em branco.');
-    const ini=uNovoTesteIni.value||hojeISO(),fim=uNovoTesteFim.value,erro=validarPeriodo(ini,fim);
-    if(erro)return alert(erro);
-    teste={inicio:ini,fim,definidoPor:atual.id,definidoEm:new Date().toISOString()};
-  }
-  const novo=await novoUsuario(nome,login,senha,perfil);
-  novo.criadoPorId=atual.id;
-  if(teste)novo.teste=teste;
-  db.usuarios.push(novo);
-  uNovoNome.value=uNovoLogin.value=uNovoSenha.value=uNovoTesteIni.value=uNovoTesteFim.value='';persist();
-  const t=testeDe(novo);
-  alert(t?`Usuário cadastrado. Ele está em período de teste até ${fmtTeste(t.fim)}.`:'Usuário cadastrado.');
+let criandoUsuario=false;
+function configurarTeste30(){
+ if(uTeste30.checked){uNovoTesteIni.value=hojeISO();uNovoTesteFim.value=somaDias(hojeISO(),29);}
+ else{uNovoTesteIni.value=uNovoTesteFim.value='';}
 }
+async function salvarUsuario(){
+ if(criandoUsuario)return;
+ const nome=uNovoNome.value.trim(),login=uNovoLogin.value.trim().toLowerCase(),senha=uNovoSenha.value,perfil=uNovoPerfil.value;
+ if(!(atual?.perfil==='admin'||(atual?.perfil==='master'&&pode('usuarios_gerenciar')&&perfil==='usuario')))return alert(SEM_PERMISSAO);
+ if(!nome||!/^\S+@\S+\.\S+$/.test(login))return alert('Informe o nome e um e-mail válido.');
+ if(!['admin','master','usuario'].includes(perfil))return alert('Escolha um perfil válido.');
+ if(db.usuarios.some(u=>u.login===login))return alert('Este e-mail já está cadastrado.');
+ if(senha.length<6)return alert('A senha inicial precisa ter pelo menos 6 caracteres.');
+ let teste=null;
+ if(atual.perfil==='admin'&&(uNovoTesteIni.value||uNovoTesteFim.value)){
+  if(perfil==='admin')return alert('Administradores têm acesso permanente. Escolha Master ou Usuário para teste.');
+  const inicio=uNovoTesteIni.value||hojeISO(),fim=uNovoTesteFim.value,erro=validarPeriodo(inicio,fim);
+  if(erro)return alert(erro);teste={inicio,fim,definidoPor:atual.id,definidoEm:new Date().toISOString()};
+ }
+ criandoUsuario=true;btnCadastrarUsuario.disabled=true;btnCadastrarUsuario.textContent='Cadastrando...';
+ let secondary=null,created=null;
+ try{
+  await cloudQueue;
+  if(!cloudReady||cloudFailed)throw Error('Recarregue e entre novamente antes de cadastrar.');
+  secondary=firebase.initializeApp(firebase.app().options,'cadastro-'+crypto.randomUUID());
+  await secondary.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
+  created=(await secondary.auth().createUserWithEmailAndPassword(login,senha)).user;
+  const novo={id:created.uid,nome,login,perfil,ativo:true,criadoPorId:atual.id,criadoEm:new Date().toISOString(),teste};
+  db.usuarios.push(novo);
+  const ok=await persist();
+  if(!ok){db.usuarios=db.usuarios.filter(u=>u.id!==created.uid);await created.delete();created=null;throw Error('Não foi possível liberar a conta. Confira se publicou as novas regras do Firebase.');}
+  uNovoNome.value=uNovoLogin.value=uNovoSenha.value=uNovoTesteIni.value=uNovoTesteFim.value='';uTeste30.checked=false;
+  alert(teste?'Usuário cadastrado com teste até '+fmtTeste(teste.fim)+'.':'Usuário cadastrado. Ele já pode entrar com seu e-mail e senha.');
+ }catch(e){
+  if(created&&!db.usuarios.some(u=>u.id===created.uid)){try{await created.delete()}catch(_){}}
+  alert(mensagemCloud(e));
+ }finally{
+  if(secondary){try{await secondary.auth().signOut();await secondary.delete();}catch(_){}}
+  criandoUsuario=false;btnCadastrarUsuario.disabled=false;btnCadastrarUsuario.textContent='＋ Cadastrar usuário';
+ }
+}
+
 function alterarPerfil(id,perfil){
   const u=db.usuarios.find(x=>x.id===id);
   if(atual?.perfil!=='admin'||!u||u.id===atual.id)return alert(SEM_PERMISSAO);
@@ -919,7 +944,9 @@ function excluirUsuario(id){
 }
 function definirPermissao(perfil,chave,valor){
   if(atual?.perfil!=='admin')return alert(SEM_PERMISSAO);
-  db.permissoes[perfil][chave]=valor;persist();
+  if(!['master','usuario'].includes(perfil)||!PERMS.some(([k])=>k===chave))return;
+  if(perfil==='usuario'&&chave==='usuarios_gerenciar')return;
+  db.permissoes[perfil][chave]=!!valor;persist();
 }
 function restaurarPermissoes(){
   if(atual?.perfil!=='admin')return alert(SEM_PERMISSAO);
@@ -932,18 +959,19 @@ function renderUsuarios(){
   uNovoPerfil.innerHTML=(admin?['usuario','master','admin']:['usuario']).map(p=>`<option value="${p}">${PERFIS[p]}</option>`).join('');
   if([...uNovoPerfil.options].some(o=>o.value===pSel))uNovoPerfil.value=pSel;
   uTesteBox.style.display=admin?'':'none';
+  firebaseSetupCard.style.display=admin?'':'none';
   const meuTeste=testeDe(atual);
   uTesteDica.textContent=admin?'Opcional. Com período de teste, o acesso é bloqueado depois da data de fim. Usuários cadastrados por um Master em teste entram automaticamente no mesmo período.'
     :meuTeste?`Você está em período de teste até ${fmtTeste(meuTeste.fim)}. Os usuários que você cadastrar entram automaticamente no mesmo período.`:'';
   uTesteDica.style.display=uTesteDica.textContent?'':'none';
-  const lista=db.usuarios.filter(u=>admin||u.perfil==='usuario'||u.id===atual.id);
+  const lista=db.usuarios.filter(u=>admin||u.criadoPorId===atual.id||u.id===atual.id);
   usuTabela.innerHTML=lista.length?`<table><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Situação</th><th>Período de teste</th><th>Último acesso</th><th>Ações</th></tr></thead><tbody>${lista.map(u=>{
     const eu=u.id===atual.id,gerir=podeGerir(u)&&!eu;
     const perfil=admin&&!eu
       ?`<select onchange="alterarPerfil('${u.id}',this.value)" style="width:auto;padding:6px 8px">${['usuario','master','admin'].map(p=>`<option value="${p}"${u.perfil===p?' selected':''}>${PERFIS[p]}</option>`).join('')}</select>`
       :`<span class="badge role-${u.perfil}">${PERFIS[u.perfil]}</span>`;
     const acoes=eu?`<button class="secondary" onclick="abrirModalSenha()">🔑 Minha senha</button>`
-      :gerir?`<button class="secondary" onclick="abrirModalSenha('${u.id}')">🔑 Redefinir senha</button> <button class="warning" onclick="alternarAtivo('${u.id}')">${u.ativo?'Bloquear':'Desbloquear'}</button> <button class="danger" onclick="excluirUsuario('${u.id}')">Excluir</button>`:'—';
+      :gerir?`<button class="secondary" onclick="enviarRedefinicao('${u.id}')">✉ Redefinir senha</button> <button class="warning" onclick="alternarAtivo('${u.id}')">${u.ativo?'Bloquear':'Desbloquear'}</button> <button class="danger" onclick="excluirUsuario('${u.id}')">Excluir</button>`:'—';
     return `<tr><td>${esc(u.nome)}${eu?' <span class="muted">(você)</span>':''}</td><td>${esc(u.login)}</td><td>${perfil}</td><td>${u.ativo?'<span class="badge ok">Ativo</span>':'<span class="badge bad">Bloqueado</span>'}</td><td>${celulaTeste(u,admin)}</td><td>${u.ultimoAcesso?new Date(u.ultimoAcesso).toLocaleString('pt-BR'):'—'}</td><td class="nowrap">${acoes}</td></tr>`;
   }).join('')}</tbody></table>`:'<div class="empty">Nenhum usuário cadastrado.</div>';
   renderPermissoes();
@@ -973,22 +1001,17 @@ function abrirModalSenha(id){
   modalSenha.classList.add('show');setTimeout(()=>(proprio?mAtual:mNova).focus(),50);
 }
 function fecharModal(){modalSenha.classList.remove('show');modalAlvo=null}
-async function confirmarSenha(){
-  const u=db.usuarios.find(x=>x.id===modalAlvo);if(!u||!atual)return fecharModal();
-  const proprio=u.id===atual.id;
-  if(!proprio&&!podeGerir(u))return mErro.textContent=SEM_PERMISSAO;
-  if(proprio&&await hashSenha(mAtual.value,u.salt)!==u.hash)return mErro.textContent='Senha atual incorreta.';
-  if(mNova.value.length<6)return mErro.textContent='A nova senha deve ter pelo menos 6 caracteres.';
-  if(mNova.value!==mConf.value)return mErro.textContent='As senhas não conferem.';
-  u.salt=crypto.randomUUID();u.hash=await hashSenha(mNova.value,u.salt);
-  persist();fecharModal();alert('Senha alterada com sucesso.');
+async function enviarRedefinicao(id){
+ const u=db.usuarios.find(x=>x.id===id);if(!u||!podeGerir(u))return alert(SEM_PERMISSAO);
+ if(!confirm('Enviar e-mail para '+u.login+' definir uma nova senha?'))return;
+ try{await cloudAuth.sendPasswordResetEmail(u.login);alert('Solicitação enviada. Oriente o usuário a verificar a caixa de entrada e o spam.');}catch(e){alert(mensagemCloud(e))}
 }
-[aNome,aLogin,aSenha,aSenha2].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')enviarAuth()}));
-[mAtual,mNova,mConf].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')confirmarSenha()}));
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){fecharModal();fecharModalTeste()}});
-/* ================= FIM CONTROLE DE ACESSO ================= */
+async function confirmarSenha(){
+ if(mNova.value.length<6||mNova.value!==mConf.value)return alert('Use ao menos 6 caracteres e confirme a nova senha.');
+ try{const u=cloudAuth.currentUser;await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email,mAtual.value));await u.updatePassword(mNova.value);fecharModal();alert('Senha atualizada no Firebase.');}catch(e){alert(mensagemCloud(e))}
+}
 
-function persist(){localStorage.setItem(KEY,JSON.stringify(db));atualizarTudo()}
+function persist(){localStorage.setItem(KEY,JSON.stringify(db));atualizarTudo();return salvarCloud()}
 function abrir(id,el){
   if(id!=='semacesso'&&!podeSecao(id))return alert('Seu perfil não tem acesso a esta área.');
   document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
@@ -1867,10 +1890,175 @@ function atualizarTudo(){
 
 /* ----- Inicialização com login ----- */
 iData.value=new Date().toISOString().slice(0,16);
-(function(){
-  const sid=sessionStorage.getItem(SESSAO),su=db.usuarios.find(x=>x.id===sid&&x.ativo);
-  if(su&&!bloqueioTeste(su))entrar(su);else iniciarAuth();
-})();
+iniciarAuth();
+
+const FIREBASE_RULES="rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    function owner() { return request.auth != null && request.auth.uid == 'ChpY0KgLLYa8woWrTl8R2fvxFdE3'; }\n    function conta(uid) { return get(/databases/$(database)/documents/sistemas/inspecoes/usuarios/$(uid)).data; }\n    function vigente(u) {\n      return u.ativo == true && (u.inicioAcesso == null || request.time >= u.inicioAcesso)\n        && (u.fimAcesso == null || request.time < u.fimAcesso);\n    }\n    function ativo() {\n      let u = conta(request.auth.uid);\n      return vigente(u) && (u.criadoPorId == null || !exists(/databases/$(database)/documents/sistemas/inspecoes/usuarios/$(u.criadoPorId))\n        || conta(u.criadoPorId).perfil != 'master' || vigente(conta(u.criadoPorId)));\n    }\n    function acesso() { return request.auth != null && (owner() || ativo()); }\n    function admin() { return owner() || (acesso() && conta(request.auth.uid).perfil == 'admin'); }\n    function permissao(chave) {\n      return acesso() && (admin() || get(/databases/$(database)/documents/sistemas/inspecoes/config/permissoes).data[conta(request.auth.uid).perfil][chave] == true);\n    }\n    function gereUsuarios() { return acesso() && conta(request.auth.uid).perfil == 'master' && permissao('usuarios_gerenciar'); }\n    function subordinado(u) { return u.perfil == 'usuario' && u.criadoPorId == request.auth.uid; }\n    function chave(c,acao) {\n      return (c == 'inspecoes' ? 'inspecao' : (c == 'veiculos' ? 'veiculos' : c)) + '_' + acao;\n    }\n    match /sistemas/inspecoes/usuarios/{uid} {\n      allow get: if request.auth != null && (request.auth.uid == uid || acesso());\n      allow list: if acesso();\n      allow create: if admin() || (gereUsuarios() && subordinado(request.resource.data)\n        && request.resource.data.teste == null && request.resource.data.inicioAcesso == null && request.resource.data.fimAcesso == null);\n      allow update: if admin() || (gereUsuarios() && subordinado(resource.data)\n        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nome','ativo']));\n      allow delete: if uid != 'ChpY0KgLLYa8woWrTl8R2fvxFdE3' && (admin() || (gereUsuarios() && subordinado(resource.data)));\n    }\n    match /sistemas/inspecoes/config/permissoes {\n      allow read: if acesso();\n      allow write: if admin();\n    }\n    match /sistemas/inspecoes/controle/estado {\n      allow read: if acesso();\n      allow write: if admin() || (acesso() && resource.data.ready == true\n        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['revision','updatedAt'])\n        && request.resource.data.revision == resource.data.revision + 1);\n    }\n    match /sistemas/inspecoes/{colecao}/{id} {\n      allow read: if colecao in ['empresas','residuos','inspecoes','veiculos','avisos'] && acesso();\n      allow create: if colecao in ['empresas','residuos','inspecoes','veiculos','avisos']\n        && (colecao == 'avisos' ? permissao('avisos_gerenciar') : permissao(chave(colecao,colecao == 'inspecoes' ? 'criar' : 'cadastrar')));\n      allow update: if colecao in ['empresas','residuos','inspecoes','veiculos','avisos']\n        && (colecao == 'avisos' ? permissao('avisos_gerenciar') : permissao(chave(colecao,colecao == 'inspecoes' ? 'editar' : 'cadastrar')))\n        && (colecao != 'inspecoes' || request.resource.data.status == resource.data.status\n          || !(request.resource.data.status in ['Liberado','Liberado com observa\u00e7\u00e3o']) || permissao('inspecao_liberar'));\n      allow delete: if colecao in ['empresas','residuos','inspecoes','veiculos','avisos']\n        && (colecao == 'avisos' ? permissao('avisos_gerenciar') : permissao(chave(colecao,'excluir')));\n    }\n    // Somente o administrador principal acessa o formato antigo durante a migra\u00e7\u00e3o.\n    match /sistemas/inspecoes/dados/{id} { allow read, write: if owner(); }\n  }\n}\n";
+// Dados separados por registro; permissões e testes validados no Firestore.
+let cloudAuth=null,cloudStore=null,cloudRef=null,cloudReady=false,cloudRevision=0;
+let cloudQueue=Promise.resolve(),cloudPending=0,cloudFailed=false,cloudBaseline=null;
+const OWNER='ChpY0KgLLYa8woWrTl8R2fvxFdE3';
+const COLLECTIONS=['empresas','residuos','inspecoes','veiculos','avisos','usuarios'];
+const BASE='sistemas/inspecoes/';
+document.getElementById('regrasTexto').value=FIREBASE_RULES;
+const cloudRecovery=document.createElement('div');cloudRecovery.hidden=true;
+cloudRecovery.innerHTML='<button onclick="backupCloud()">Baixar backup</button> <button onclick="location.reload()">Recarregar</button>';
+document.querySelector('.auth-card').append(cloudRecovery);
+function statusCloud(t){
+ const el=document.getElementById('matrizStatus');if(el)el.textContent=t;
+ if(cloudFailed){document.body.classList.add('locked');authErro.textContent=t+' Baixe um backup antes de recarregar.';cloudRecovery.hidden=false;}
+}
+function mensagemCloud(e){
+ const c=e.code||'';
+ if(/email-already-in-use/.test(c))return 'Este e-mail já existe no Firebase. Use outro e-mail ou verifique a conta em Authentication.';
+ if(/invalid-credential|wrong-password|user-not-found|invalid-email/.test(c))return 'E-mail ou senha inválidos.';
+ if(/permission-denied/.test(c))return 'Acesso negado: verifique as novas regras do Firebase, as permissões e o prazo do teste.';
+ if(/network|unavailable/.test(c))return 'Não foi possível acessar o Firebase. Verifique a internet.';
+ return e.message||'Falha na conexão.';
+}
+function normalizarCloud(d){
+ for(const k of COLLECTIONS)if(!Array.isArray(d[k]))d[k]=[];
+ d.permissoes=d.permissoes||{};
+ for(const p of ['master','usuario'])d.permissoes[p]={...permPadrao(p),...(d.permissoes[p]||{})};
+ d.permissoes.usuario.usuarios_gerenciar=false;return d;
+}
+function serialUser(u){
+ const clean={...u};delete clean.hash;delete clean.salt;
+ clean.criadoPorId=clean.criadoPorId||null;clean.teste=clean.teste||null;
+ clean.inicioAcesso=clean.teste?firebase.firestore.Timestamp.fromDate(new Date(clean.teste.inicio+'T00:00:00-03:00')):null;
+ clean.fimAcesso=clean.teste?firebase.firestore.Timestamp.fromDate(new Date(somaDias(clean.teste.fim,1)+'T00:00:00-03:00')):null;
+ return clean;
+}
+function userFromDoc(x){const u={...x};delete u.inicioAcesso;delete u.fimAcesso;return u;}
+function snapshotState(d){return JSON.parse(JSON.stringify(d));}
+function mudancasCloud(old,next){
+ const changes=[];
+ for(const k of COLLECTIONS){
+  const before=new Map((old[k]||[]).map(x=>[x.id,x])),after=new Map((next[k]||[]).map(x=>[x.id,x]));
+  for(const [id,row] of after)if(JSON.stringify(before.get(id))!==JSON.stringify(row))changes.push({path:BASE+k+'/'+id,value:k==='usuarios'?serialUser(row):row});
+  for(const [id] of before)if(!after.has(id))changes.push({path:BASE+k+'/'+id,value:null});
+ }
+ if(JSON.stringify(old.permissoes)!==JSON.stringify(next.permissoes))changes.push({path:BASE+'config/permissoes',value:next.permissoes});
+ return changes;
+}
+function salvarCloud(){
+ if(!cloudReady||cloudFailed)return Promise.resolve(false);
+ const next=snapshotState(db);cloudPending++;statusCloud('Salvando alterações...');
+ const operation=cloudQueue.then(async()=>{
+  if(cloudFailed)return false;
+  const changes=mudancasCloud(cloudBaseline,next);
+  if(!changes.length)return true;
+  if(changes.length>400)throw Error('Muitas alterações de uma vez. Baixe um backup e divida a importação em lotes menores.');
+  for(const c of changes)if(c.value&&new TextEncoder().encode(JSON.stringify(c.value)).length>850000)throw Error('Um registro ultrapassou 850 KB. Reduza os anexos desse registro.');
+  const expected=cloudRevision;
+  await cloudStore.runTransaction(async tx=>{
+   const snap=await tx.get(cloudRef);
+   if(!snap.exists||(snap.data().revision||0)!==expected)throw Error('Outra sessão alterou os dados. Baixe um backup e recarregue para continuar.');
+   for(const c of changes){const ref=cloudStore.doc(c.path);if(c.value===null)tx.delete(ref);else tx.set(ref,c.value);}
+   tx.update(cloudRef,{revision:expected+1,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  });cloudRevision=expected+1;cloudBaseline=next;return true;
+ }).catch(e=>{cloudFailed=true;statusCloud(mensagemCloud(e));return false;}).finally(()=>{cloudPending--;if(!cloudFailed&&!cloudPending)statusCloud('Alterações salvas no Firebase ✓');});
+ cloudQueue=operation;return operation;
+}
+function backupCloud(){
+ const url=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='backup-inspecoes-'+hojeISO()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function inicializarDados(user){
+ const marker=await cloudRef.get({source:'server'});
+ if(!marker.exists||!marker.data().ready){
+  if(user.uid!==OWNER)throw Error('O administrador precisa abrir a versão atualizada e concluir a preparação do banco.');
+  statusCloud('Preparando os cadastros existentes...');
+  const legacy=await cloudStore.doc(BASE+'dados/principal').get({source:'server'});
+  const original=normalizarCloud(legacy.exists?JSON.parse(legacy.data().payload):{});
+  let owner=original.usuarios.find(u=>u.id===OWNER);
+  if(!owner)original.usuarios.push({id:OWNER,nome:user.displayName||user.email,login:user.email,perfil:'admin',ativo:true,criadoPorId:null});
+  const rows=[];
+  for(const k of COLLECTIONS)for(const row of original[k])rows.push({path:BASE+k+'/'+row.id,value:k==='usuarios'?serialUser(row):row});
+  rows.push({path:BASE+'config/permissoes',value:original.permissoes});
+  // A migração mantém uma cópia do formato anterior; somente sinaliza pronta ao terminar.
+  for(let i=0;i<rows.length;i+=300){const batch=cloudStore.batch();for(const row of rows.slice(i,i+300))batch.set(cloudStore.doc(row.path),row.value);await batch.commit();}
+  await cloudRef.set({ready:true,schema:2,revision:0,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+ }
+ const result=await cloudStore.runTransaction(async tx=>{const m=await tx.get(cloudRef);return m.data();});
+ // Revalida a versão depois da leitura para evitar carregar um conjunto de cadastros de duas versões diferentes.
+ const d={};
+ const loads=await Promise.all(COLLECTIONS.map(k=>cloudStore.collection(BASE+k).get({source:'server'})));
+ COLLECTIONS.forEach((k,i)=>d[k]=loads[i].docs.map(doc=>k==='usuarios'?userFromDoc(doc.data()):doc.data()));
+ const perms=await cloudStore.doc(BASE+'config/permissoes').get({source:'server'});d.permissoes=perms.exists?perms.data():{};
+ const end=await cloudRef.get({source:'server'});if(end.data().revision!==result.revision)throw Error('Os dados mudaram durante o carregamento. Recarregue a página.');
+ cloudRevision=result.revision;return normalizarCloud(d);
+}
+function importarLocalCloud(){alert('Para importar dados da versão antiga, solicite a migração do seu backup. Os dados já existentes no Firebase são preservados automaticamente.');}
+async function copiarRegras(){
+ try{await navigator.clipboard.writeText(FIREBASE_RULES);alert('Regras copiadas. No Firebase, abra Firestore → Regras, substitua o conteúdo e clique em Publicar.');}
+ catch(e){document.getElementById('regrasTexto').hidden=false;document.getElementById('regrasTexto').value=FIREBASE_RULES;document.getElementById('regrasTexto').select();}
+}
+window.addEventListener('beforeunload',e=>{if(cloudPending||cloudFailed){e.preventDefault();e.returnValue='';}});
+let profileWatch=null,checandoSessao=false;
+function bloquearAcessoConfirmado(mensagem){
+ cloudReady=false;document.body.classList.add('locked');
+ authErro.textContent=mensagem;authBtn.disabled=false;
+}
+async function validarSessaoRemota(){
+ if(checandoSessao||!cloudReady||!cloudAuth?.currentUser)return;
+ checandoSessao=true;
+ try{
+  const user=cloudAuth.currentUser,snap=await cloudStore.doc(BASE+'usuarios/'+user.uid).get({source:'server'});
+  if(!snap.exists){bloquearAcessoConfirmado('Seu acesso foi removido pelo administrador.');return;}
+  const u=userFromDoc(snap.data());
+  if(!u.ativo){bloquearAcessoConfirmado('Seu acesso está bloqueado pelo administrador.');return;}
+  const parent=u.criadoPorId?await cloudStore.doc(BASE+'usuarios/'+u.criadoPorId).get({source:'server'}):null;
+  if(parent?.exists){const m=userFromDoc(parent.data());if(m.perfil==='master'){
+   if(!m.ativo){bloquearAcessoConfirmado('O Master responsável está bloqueado.');return;}
+   if(m.teste)u.teste=m.teste;
+  }}
+  // Usa os perfis lidos do servidor, sem herdar o período de um cadastro local desatualizado.
+  const trial=u.perfil==='admin'?null:u.teste;
+  const situacao=situacaoTeste(trial);
+  if(situacao==='encerrado'){bloquearAcessoConfirmado('O período de teste terminou em '+fmtTeste(trial.fim)+'. Procure o administrador.');return;}
+  if(situacao==='agendado'){bloquearAcessoConfirmado('Seu período de teste começa em '+fmtTeste(trial.inicio)+'.');return;}
+  statusCloud('Sessão validada ✓');
+ }catch(e){
+  if(/permission-denied|unauthenticated/.test(e.code||'')){
+   bloquearAcessoConfirmado('O Firebase recusou a validação do acesso. Recarregue para validar novamente; se persistir, procure o administrador.');
+  }else{
+   // Rede, limite de consultas e erros temporários não encerram a autenticação.
+   statusCloud('Validação temporariamente indisponível. Uma nova tentativa será feita automaticamente.');
+  }
+ }finally{checandoSessao=false;}
+}
+setInterval(validarSessaoRemota,60000);
+try{
+ if(!window.firebase)throw Error('Firebase não carregou. Confira a internet e recarregue.');
+ firebase.initializeApp({apiKey:'AIzaSyDtNIttfQd8zmvjKNuyE2Vm2GM2wFHdjjk',authDomain:'inspecao-de-residuos.firebaseapp.com',projectId:'inspecao-de-residuos',storageBucket:'inspecao-de-residuos.firebasestorage.app',messagingSenderId:'953600770596',appId:'1:953600770596:web:8ad314c9ee075c55ec0eb1'});
+ cloudAuth=firebase.auth();cloudStore=firebase.firestore();cloudRef=cloudStore.doc(BASE+'controle/estado');
+ authBtn.disabled=true;authErro.textContent='Restaurando sessão...';
+ // SESSION mantém a conta desta aba independente de login e saída em outras abas.
+ cloudAuth.setPersistence(firebase.auth.Auth.Persistence.SESSION).then(()=>{
+ cloudAuth.onAuthStateChanged(async user=>{
+  if(profileWatch){profileWatch();profileWatch=null;}
+  if(!user){cloudReady=false;atual=null;iniciarAuth();return;}
+  try{
+   cloudReady=false;document.body.classList.add('locked');statusCloud('Carregando os dados...');
+   // Consulta o próprio perfil antes de carregar dados compartilhados.
+   if(user.uid!==OWNER){
+    const own=await cloudStore.doc(BASE+'usuarios/'+user.uid).get({source:'server'});
+    if(!own.exists||!own.data().ativo)throw Error('Conta sem acesso ao sistema. Procure o administrador.');
+    const check=userFromDoc(own.data());const msg=bloqueioTeste(check);if(msg)throw Error(msg);
+   }
+   db=await inicializarDados(user);
+   const current=db.usuarios.find(u=>u.id===user.uid);
+   if(!current||!current.ativo)throw Error('Conta sem acesso ao sistema.');
+   const msg=bloqueioTeste(current);if(msg)throw Error(msg);
+   cloudBaseline=snapshotState(db);cloudFailed=false;cloudRecovery.hidden=true;cloudReady=true;
+   localStorage.setItem(KEY,JSON.stringify(db));entrar(current);authBtn.disabled=false;authErro.textContent='';statusCloud('Dados carregados ✓');
+   profileWatch=cloudStore.doc(BASE+'usuarios/'+user.uid).onSnapshot(snap=>{
+    if(!snap.exists||!snap.data().ativo){cloudReady=false;document.body.classList.add('locked');authErro.textContent='Seu acesso foi bloqueado ou removido.';}
+   },()=>{});
+  }catch(e){cloudReady=false;document.body.classList.add('locked');authErro.textContent=mensagemCloud(e);authBtn.disabled=false;}
+ });
+ }).catch(e=>{authErro.textContent='Não foi possível preparar a sessão: '+mensagemCloud(e);authBtn.disabled=false;});
+}catch(e){authErro.textContent=mensagemCloud(e);authBtn.disabled=false;}
+
 </script>
 <script>
 /* ===== Tema claro/escuro ===== */
