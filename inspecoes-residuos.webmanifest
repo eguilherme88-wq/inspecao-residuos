@@ -9,7 +9,7 @@
   "background_color": "#f4f7fb",
   "theme_color": "#102a56",
   "icons": [
-    {"src": "./icons/inspecoes-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-    {"src": "./icons/inspecoes-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+    {"src": "./icons/poliguindaste-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "./icons/poliguindaste-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
   ]
 }
