@@ -532,7 +532,11 @@ html[data-theme="dark"] [style*="color:#667085"]{color:var(--muted)!important}
       </div>
       <div class="row4" style="margin-top:12px">
         <div class="f-extra"><label>Data inicial</label><input id="fDataIni" type="date" onchange="render()"></div>
+        <div class="f-extra"><label for="fHoraIni">Hora inicial</label><input id="fHoraIni" type="time" onchange="render()"></div>
         <div class="f-extra"><label>Data final</label><input id="fDataFim" type="date" onchange="render()"></div>
+        <div class="f-extra"><label for="fHoraFim">Hora final</label><input id="fHoraFim" type="time" onchange="render()"></div>
+      </div>
+      <div class="row4" style="margin-top:12px">
         <div class="f-extra"><label>Placa</label><input id="fPlaca" autocapitalize="characters" oninput="render()" placeholder="ABC-1234"></div>
         <div class="filter-actions"><button class="secondary" onclick="limparFiltros()">↺ Limpar filtros</button><button class="pdf btnPdf" onclick="gerarPDF('hist',this)">📄 Gerar PDF</button></div>
       </div>
@@ -1170,11 +1174,11 @@ const ICONE_STATUS={'Liberado':'✅','Liberado com observação':'⚠️','Em es
 function badge(s){let c=s==='Liberado'?'ok':s==='Em espera'?'warn':s==='Liberado com observação'?'info':'bad';return `<span class="badge ${c}">${ICONE_STATUS[s]||''} ${esc(s)}</span>`}
 function render(){
   atualizarBtnFiltros();
-  const q=(busca.value||'').toLowerCase().trim(),fs=fStatus.value,fe=fEmpresa.value,fr=fResiduo.value,fi=fDataIni.value,ff=fDataFim.value,fp=(fPlaca.value||'').toLowerCase().trim();
+  const q=(busca.value||'').toLowerCase().trim(),fs=fStatus.value,fe=fEmpresa.value,fr=fResiduo.value,fi=fDataIni.value,ff=fDataFim.value,hi=fHoraIni.value,hf=fHoraFim.value,fp=(fPlaca.value||'').toLowerCase().trim();
   let arr=listaHist=db.inspecoes.filter(x=>{
-    const d=(x.data||'').slice(0,10);
+    const periodoConfere=conferePeriodoHistorico(x.data,fi,ff,hi,hf);
     return (!q||[x.empresa,x.residuo,x.placa,x.doc,x.motorista,x.inspetor,x.obs].join(' ').toLowerCase().includes(q))
-      &&(!fs||x.status===fs)&&(!fe||x.empresa===fe)&&(!fr||x.residuo===fr)&&(!fi||d>=fi)&&(!ff||d<=ff)&&(!fp||(x.placa||'').toLowerCase().includes(fp));
+      &&(!fs||x.status===fs)&&(!fe||x.empresa===fe)&&(!fr||x.residuo===fr)&&periodoConfere&&(!fp||(x.placa||'').toLowerCase().includes(fp));
   });
   histTabela.innerHTML=arr.length?`<table><thead><tr><th>Data</th><th>Empresa</th><th>Resíduo</th><th>Placa</th><th>Motorista</th><th>Temp.</th><th>Status</th><th>Inspetor</th><th>Ações</th></tr></thead><tbody>${arr.map(x=>`<tr><td>${new Date(x.data).toLocaleString('pt-BR')}</td><td>${esc(x.empresa)}</td><td>${esc(x.residuo)}</td><td>${esc(x.placa)}</td><td>${esc(x.motorista||'—')}</td><td class="nowrap">${esc(x.temp||'-')} °C</td><td class="nowrap">${badge(x.status)}</td><td>${esc(x.inspetor)}</td><td class="nowrap">${[pode('inspecao_editar')?`<button class="secondary" onclick="editarInspecao('${x.id}')">✏️ Editar</button>`:'',pode('inspecao_excluir')?`<button class="danger" onclick="excluirInspecao('${x.id}')">Excluir</button>`:''].join(' ').trim()||'—'}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhuma inspeção encontrada com os filtros informados.</div>';
   renderDash();
@@ -1183,6 +1187,19 @@ function render(){
   resTabela.innerHTML=db.residuos.length?`<table><thead><tr><th>Resíduo</th><th>Código</th><th>Classe</th><th>Tolerância de temperatura</th><th></th></tr></thead><tbody>${db.residuos.map(x=>`<tr><td>${esc(x.nome)}</td><td>${esc(x.codigo)}</td><td>${esc(x.classe)}</td><td>${x.tempMin!=null?esc(x.tempMin)+' °C':'—'} até ${x.tempMax!=null?esc(x.tempMax)+' °C':'—'}</td><td>${pode('residuos_excluir')?`<button class="danger" onclick="excluir('residuos','${x.id}')">Excluir</button>`:''}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum resíduo cadastrado.</div>';
 }
 function dataLocal(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+function conferePeriodoHistorico(data, dataInicial, dataFinal, horaInicial, horaFinal){
+  if(!dataInicial&&!dataFinal&&!horaInicial&&!horaFinal)return true;
+  const soData=/^\d{4}-\d{2}-\d{2}$/.test(data);
+  const registro=new Date(data||'');
+  if(!Number.isFinite(registro.getTime()))return false;
+  const dia=soData?data:dataLocal(registro);
+  if((dataInicial&&dia<dataInicial)||(dataFinal&&dia>dataFinal))return false;
+  if(!horaInicial&&!horaFinal)return true;
+  if(soData)return false;
+  const hora=String(registro.getHours()).padStart(2,'0')+':'+String(registro.getMinutes()).padStart(2,'0');
+  if(horaInicial&&horaFinal&&horaInicial>horaFinal)return hora>=horaInicial||hora<=horaFinal;
+  return (!horaInicial||hora>=horaInicial)&&(!horaFinal||hora<=horaFinal);
+}
 function noPeriodo(x,per){
   if(!per)return true;
   const d=(x.data||'').slice(0,10),hoje=new Date();
@@ -1234,6 +1251,7 @@ function descreverFiltros(origem){
     if(fEmpresa.value)f.push('Empresa: '+fEmpresa.value);
     if(fResiduo.value)f.push('Resíduo: '+fResiduo.value);
     if(fDataIni.value||fDataFim.value)f.push(`Período: ${fDataIni.value?fmtDia(fDataIni.value):'início'} a ${fDataFim.value?fmtDia(fDataFim.value):'hoje'}`);
+    if(fHoraIni.value||fHoraFim.value)f.push('Horário diário: '+(fHoraIni.value&&fHoraFim.value?fHoraIni.value+' a '+fHoraFim.value:fHoraIni.value?'a partir de '+fHoraIni.value:'até '+fHoraFim.value));
     if(fPlaca.value.trim())f.push('Placa: '+fPlaca.value.trim().toUpperCase());
   }else{
     if(dBusca.value.trim())f.push(`Pesquisa: "${dBusca.value.trim()}"`);
@@ -1312,7 +1330,7 @@ function pdfImpressao(R){
 /* ================= FIM RELATÓRIO PDF ================= */
 function filtrarKpi(st){dStatus.value=dStatus.value===st?'':st;renderDash()}
 function limparFiltrosDash(){dBusca.value='';dStatus.value='';dPeriodo.value='';dEmpresa.value='';renderDash()}
-function limparFiltros(){busca.value='';fStatus.value='';fEmpresa.value='';fResiduo.value='';fDataIni.value='';fDataFim.value='';fPlaca.value='';render()}
+function limparFiltros(){busca.value='';fStatus.value='';fEmpresa.value='';fResiduo.value='';fDataIni.value='';fDataFim.value='';fHoraIni.value='';fHoraFim.value='';fPlaca.value='';render()}
 iStatus.addEventListener('change',()=>{releaseBox.classList.toggle('show',(iStatus.value==='Em espera'||!!editandoId)&&pode('inspecao_liberar'));});
 iResiduo.addEventListener('change',mostrarToleranciaResiduo);
 /* ================= PLANILHA OFFLINE (EXCEL) ================= */
@@ -1740,7 +1758,7 @@ iMotorista.addEventListener('input',avisoAoDigitar);iMotorista.addEventListener(
 function alternarFiltros(id){document.getElementById(id).classList.toggle('aberto');atualizarBtnFiltros()}
 function atualizarBtnFiltros(){
   if(typeof btnFiltrosHist==='undefined')return;
-  const nh=[fStatus,fEmpresa,fResiduo,fDataIni,fDataFim,fPlaca].filter(e=>e.value).length,nd=[dStatus,dPeriodo,dEmpresa].filter(e=>e.value).length;
+  const nh=[fStatus,fEmpresa,fResiduo,fDataIni,fDataFim,fHoraIni,fHoraFim,fPlaca].filter(e=>e.value).length,nd=[dStatus,dPeriodo,dEmpresa].filter(e=>e.value).length;
   const txt=(id,n)=>(document.getElementById(id).classList.contains('aberto')?'▴ Menos filtros':'⚙️ Mais filtros')+(n?` (${n})`:'');
   btnFiltrosHist.textContent=txt('filtrosHist',nh);btnFiltrosDash.textContent=txt('filtrosDash',nd);
 }
