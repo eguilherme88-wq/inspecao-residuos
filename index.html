@@ -11,8 +11,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Inspeções">
+<meta name="apple-mobile-web-app-title" content="Inspeções de Resíduos">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="manifest" href="./inspecoes-residuos.webmanifest">
+<link rel="apple-touch-icon" href="./icons/inspecoes-192.png">
 <title>Controle de Inspeções de Resíduos</title>
 <script>
 (function(){try{var t=localStorage.getItem('inspecoes_tema');if(!t)t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
@@ -287,6 +289,12 @@ html[data-theme="dark"] [style*="color:#667085"]{color:var(--muted)!important}
   html[data-theme="dark"] .container tr.grp{background:none}
 }
 </style>
+<style>
+#dialogInstalarInspecoes{width:min(460px,calc(100% - 32px));border:1px solid var(--line);border-radius:16px;padding:24px;background:var(--card);color:var(--dark);line-height:1.5}
+#dialogInstalarInspecoes::backdrop{background:#101828aa}
+#dialogInstalarInspecoes h2{margin:0;font-size:20px}
+#dialogInstalarInspecoes button{background:var(--primary);color:white;border:0;border-radius:8px;padding:10px 16px}
+</style>
 </head>
 <body class="locked">
 <div id="auth">
@@ -336,6 +344,11 @@ html[data-theme="dark"] [style*="color:#667085"]{color:var(--muted)!important}
   </div>
 </div>
 
+<dialog id="dialogInstalarInspecoes" aria-labelledby="tituloInstalarInspecoes">
+  <h2 id="tituloInstalarInspecoes">Instalar Inspeções de Resíduos</h2>
+  <p id="instrucoesInstalarInspecoes"></p>
+  <form method="dialog"><button type="submit" autofocus>Fechar</button></form>
+</dialog>
 <div class="menu-overlay" onclick="toggleMenu(false)"></div>
 <aside class="sidebar">
   <div class="brand">
@@ -353,6 +366,9 @@ html[data-theme="dark"] [style*="color:#667085"]{color:var(--muted)!important}
     <button class="tab" data-sec="matriz" onclick="abrir('matriz',this)">🔐 Matriz de acesso</button>
     <button class="tab" data-sec="usuarios" onclick="abrir('usuarios',this)">👥 Usuários e acessos</button>
   </nav>
+  <div class="nav">
+    <button type="button" class="tab" id="btnInstalarInspecoes" aria-haspopup="dialog">📲 Instalar app</button>
+  </div>
   <div class="links-ext">
     <small>Sistema SST</small>
     <!-- Endereço do Portal de Produtos Químicos (FDS). Ajuste aqui se o Sistema SST estiver publicado em outro domínio. -->
@@ -768,7 +784,7 @@ function aplicarPermissoes(){
   uNome.textContent=uNomeM.textContent=atual.nome;uPerfil.textContent=uPerfilM.textContent=PERFIS[atual.perfil];
   document.querySelector('.uh-perfil').title=`${atual.nome} (${PERFIS[atual.perfil]})`;
   uAvatar.textContent=atual.nome.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
-  document.querySelectorAll('.tab,.bn[data-sec]').forEach(t=>{const sec=t.dataset.sec;t.style.display=(sec==='inspecao'?pode('inspecao_criar'):podeSecao(sec))?'':'none'});
+  document.querySelectorAll('.tab[data-sec],.bn[data-sec]').forEach(t=>{const sec=t.dataset.sec;t.style.display=(sec==='inspecao'?pode('inspecao_criar'):podeSecao(sec))?'':'none'});
   btnNovaHeader.style.display=pode('inspecao_criar')?'':'none';
   kpiGrid.style.display=pode('dashboard')?'':'none';
   formEmpresa.style.display=pode('empresas_cadastrar')?'':'none';
@@ -2095,6 +2111,67 @@ document.addEventListener('webkitfullscreenchange',atualizarTelaCheia);
 
 /* ===== Ano do rodapé ===== */
 document.querySelectorAll('.ano-atual').forEach(function(e){e.textContent=new Date().getFullYear();});
+</script>
+<script>
+(() => {
+  const button = document.getElementById('btnInstalarInspecoes');
+  const dialog = document.getElementById('dialogInstalarInspecoes');
+  const instructions = document.getElementById('instrucoesInstalarInspecoes');
+  const standalone = matchMedia('(display-mode: standalone)');
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let pendingPrompt;
+
+  const updateButton = () => {
+    const installed = standalone.matches || navigator.standalone === true;
+    button.hidden = installed;
+  };
+  updateButton();
+  standalone.addEventListener('change', updateButton);
+
+  window.addEventListener('beforeinstallprompt', event => {
+    event.preventDefault();
+    pendingPrompt = event;
+  });
+  window.addEventListener('appinstalled', () => {
+    pendingPrompt = null;
+    button.hidden = true;
+    if (dialog.open) dialog.close();
+  });
+
+  const showInstructions = () => {
+    if (!window.isSecureContext || location.protocol === 'file:') {
+      instructions.textContent = 'Abra o endereço HTTPS em que o sistema foi publicado para instalar o app.';
+    } else if (ios) {
+      instructions.textContent = 'Abra o sistema no Safari, toque em Compartilhar e escolha Adicionar à Tela de Início. Ative Abrir como App da Web se essa opção aparecer, depois toque em Adicionar.';
+    } else if (/Android/.test(navigator.userAgent)) {
+      instructions.textContent = 'No Chrome, abra o menu ⋮, toque em Adicionar à tela inicial e escolha Instalar, quando disponível.';
+    } else {
+      instructions.textContent = 'No Windows ou Linux, abra o sistema no Chrome ou Edge. Procure o ícone de instalação na barra de endereços ou a opção Instalar no menu do navegador.';
+    }
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else alert(instructions.textContent);
+  };
+
+  button.addEventListener('click', async () => {
+    if (pendingPrompt) {
+      const prompt = pendingPrompt;
+      pendingPrompt = null;
+      try {
+        await prompt.prompt();
+        return;
+      } catch (error) {
+        console.warn('Não foi possível abrir o instalador de Inspeções de Resíduos.', error);
+      }
+    }
+    showInstructions();
+  });
+
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register('./sw-inspecoes-residuos.js', {scope: './'})
+      .catch(error => console.warn('Não foi possível registrar o app Inspeções de Resíduos.', error));
+  }
+})();
 </script>
 </body>
 </html>
