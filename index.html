@@ -62,6 +62,8 @@ body.locked>aside,body.locked>header,body.locked>.container,body.locked>.bottom-
 .auth-card{background:#fff;border-radius:16px;padding:30px;width:100%;max-width:380px;box-shadow:0 20px 50px #10182840}
 .auth-card h2{margin:10px 0 4px;font-size:21px}.auth-card label{margin-top:14px}.auth-card>button{width:100%;margin-top:18px;padding:13px}.auth-brand{font-size:34px}
 .auth-erro{color:#b42318;font-size:13px;margin-top:10px}.auth-erro:empty{display:none}
+.auth-card>button.bio-btn{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;font-size:16px}.bio-btn svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+#modalBio{z-index:130}#modalBio .bio-topo{text-align:center;color:var(--primary)}#modalBio .bio-topo svg{width:56px;height:56px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}#modalBio .actions{flex-wrap:wrap}#modalBio .actions button{flex:1}.bio-nao{display:block;margin:12px auto 0;background:none;color:var(--muted,#667085);font-weight:600;font-size:13px;padding:6px}
 .modal{display:none;position:fixed;inset:0;background:#10182880;z-index:90;align-items:center;justify-content:center;padding:20px}.modal.show{display:flex}
 .modal-card{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:400px}.modal-card label{margin-top:12px}
 .teste-aviso{display:none;margin-bottom:18px;padding:12px 16px;border-radius:12px;background:#fffaeb;color:#93370d;border:1px solid #fedf89;font-size:14px;line-height:1.45}.teste-aviso.show{display:block}.teste-aviso.urgente{background:#fef3f2;color:#912018;border-color:#fecdca}
@@ -310,6 +312,19 @@ html[data-theme="dark"] [style*="color:#667085"]{color:var(--muted)!important}
     <div id="authSetup2" style="display:none"><label>Confirmar senha</label><input id="aSenha2" type="password"></div>
     <div id="authErro" class="auth-erro"></div>
     <button class="primary" id="authBtn" onclick="enviarAuth()">Entrar</button>
+    <button class="secondary bio-btn" id="authBioBtn" onclick="entrarComBiometria()" style="display:none"><svg viewBox="0 0 24 24"><path d="M12 11v3a8 8 0 0 1-1.2 4.2M8.5 8.6A4 4 0 0 1 16 11v1.5M16 16a13 13 0 0 1-.7 3M5.3 6.3A8 8 0 0 1 20 11v2M4 11a8 8 0 0 1 .3-2M4 15.5V11M8 11v2.5a5 5 0 0 1-1 3"/></svg><span>Entrar com biometria</span></button>
+  </div>
+</div>
+
+<div id="modalBio" class="modal">
+  <div class="modal-card">
+    <div class="bio-topo"><svg viewBox="0 0 24 24"><path d="M12 11v3a8 8 0 0 1-1.2 4.2M8.5 8.6A4 4 0 0 1 16 11v1.5M16 16a13 13 0 0 1-.7 3M5.3 6.3A8 8 0 0 1 20 11v2M4 11a8 8 0 0 1 .3-2M4 15.5V11M8 11v2.5a5 5 0 0 1-1 3"/></svg></div>
+    <h2 class="title" id="bioTitulo" style="text-align:center">Entrar com biometria</h2>
+    <p class="muted" id="bioTexto" style="text-align:center;margin-top:-4px"></p>
+    <div id="bioSenhaBox" style="display:none"><label>Confirme sua senha para ativar</label><input id="bioSenha" type="password" autocomplete="current-password"></div>
+    <div id="bioErro" class="auth-erro"></div>
+    <div class="actions"><button class="primary" id="bioBtnOk" onclick="bioConfirmar()">Ativar</button><button class="secondary" onclick="bioFechar()">Agora não</button></div>
+    <button class="bio-nao" id="bioBtnNunca" onclick="bioNuncaPerguntar()">Não perguntar novamente neste aparelho</button>
   </div>
 </div>
 
@@ -390,6 +405,7 @@ html[data-theme="dark"] [style*="color:#667085"]{color:var(--muted)!important}
       <div class="uh-botoes">
         <div class="uh-info"><b id="uNomeM"></b><small id="uPerfilM"></small></div>
         <button onclick="fecharUserMenu();abrirModalSenha()">🔑 Senha</button>
+        <button id="btnMenuBio" onclick="fecharUserMenu();abrirBiometria()" style="display:none">🔐 Biometria</button>
         <button onclick="fecharUserMenu();sair()">⏻ Sair</button>
       </div>
     </div>
@@ -763,20 +779,23 @@ function iniciarAuth(){
  authTitulo.textContent='Acesso ao Firebase';
  authSub.textContent='Entre com o e-mail e a senha cadastrados em Authentication.';
  authBtn.textContent='Entrar';authBtn.disabled=false;aSenha.value='';authErro.textContent='';
+ if(window.bioAtualizarTela)bioAtualizarTela();
 }
 async function enviarAuth(){
  if(authBtn.disabled)return;
  authBtn.disabled=true;authErro.textContent='Conectando...';
  try{
   if(!window.firebase)throw Error('Não foi possível carregar o Firebase. Verifique sua conexão.');
+  if(window.bioGuardarPendente)bioGuardarPendente(aLogin.value.trim(),aSenha.value);
   await cloudAuth.signInWithEmailAndPassword(aLogin.value.trim(),aSenha.value);
- }catch(e){authErro.textContent=mensagemCloud(e);authBtn.disabled=false;}
+ }catch(e){authErro.textContent=mensagemCloud(e);authBtn.disabled=false;if(window.bioFalhaLogin)bioFalhaLogin(e);}
 }
 function entrar(u){
   atual=u;sessionStorage.setItem(SESSAO,u.id);
   localStorage.setItem(KEY,JSON.stringify(db));
   document.body.classList.remove('locked');aLogin.value=aSenha.value='';
   limparInspecao();atualizarTudo();abrirPrimeira();
+  if(window.bioAposLogin)setTimeout(()=>bioAposLogin(u),600);
 }
 function sair(){
  cloudReady=false;if(cloudAuth)cloudAuth.signOut();
@@ -1028,7 +1047,7 @@ async function enviarRedefinicao(id){
 }
 async function confirmarSenha(){
  if(mNova.value.length<6||mNova.value!==mConf.value)return alert('Use ao menos 6 caracteres e confirme a nova senha.');
- try{const u=cloudAuth.currentUser;await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email,mAtual.value));await u.updatePassword(mNova.value);fecharModal();alert('Senha atualizada no Firebase.');}catch(e){alert(mensagemCloud(e))}
+ try{const u=cloudAuth.currentUser;await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email,mAtual.value));await u.updatePassword(mNova.value);const novaSenhaBio=mNova.value;fecharModal();alert('Senha atualizada no Firebase.');if(window.bioSenhaAlterada)bioSenhaAlterada(u.email,novaSenhaBio);}catch(e){alert(mensagemCloud(e))}
 }
 
 function persist(){localStorage.setItem(KEY,JSON.stringify(db));atualizarTudo();return salvarCloud()}
@@ -2189,6 +2208,212 @@ document.querySelectorAll('.ano-atual').forEach(function(e){e.textContent=new Da
     navigator.serviceWorker.register('./sw-inspecoes-residuos.js', {scope: './'})
       .catch(error => console.warn('Não foi possível registrar o app Inspeções de Resíduos.', error));
   }
+})();
+</script>
+<script>
+/* ===== Entrada com biometria (celular e tablet) =====
+   Usa WebAuthn com o autenticador do próprio aparelho (digital, rosto ou PIN do sistema).
+   Depois de um login com senha, o app oferece ativar a biometria. O e-mail e a senha ficam
+   guardados apenas neste aparelho, criptografados (AES-GCM). Quando o aparelho suporta a
+   extensão PRF (Android/Chrome e iOS 18+), a chave de criptografia só existe depois da
+   biometria; nos demais, a chave fica no navegador, não exportável, e a biometria libera o uso. */
+(function(){
+ const BIO_KEY='inspecoes_bio', BIO_NAO='inspecoes_bio_nao', IDB='inspecoes-bio';
+ let pendente=null, viaBio=false, modoModal='oferta';
+ const enc=new TextEncoder(), dec=new TextDecoder();
+ const b64=buf=>btoa(String.fromCharCode(...new Uint8Array(buf)));
+ const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+ const rand=n=>crypto.getRandomValues(new Uint8Array(n));
+ const $=id=>document.getElementById(id);
+
+ function ehMovel(){
+  const ua=navigator.userAgent||'';
+  if(navigator.userAgentData&&navigator.userAgentData.mobile)return true;
+  if(/Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(ua))return true;
+  return /Macintosh/.test(ua)&&navigator.maxTouchPoints>1; // iPadOS se apresenta como Mac
+ }
+ let suporteCache=null;
+ async function suportado(){
+  if(suporteCache!==null)return suporteCache;
+  try{
+   suporteCache=!!(window.isSecureContext&&window.PublicKeyCredential&&window.crypto&&crypto.subtle&&ehMovel()
+    &&await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable());
+  }catch(_){suporteCache=false}
+  return suporteCache;
+ }
+ function ler(){try{return JSON.parse(localStorage.getItem(BIO_KEY)||'null')}catch(_){return null}}
+ function limpar(){try{localStorage.removeItem(BIO_KEY)}catch(_){}idb('delete').catch(()=>{});}
+
+ function idb(op,valor){
+  return new Promise((ok,erro)=>{
+   const r=indexedDB.open(IDB,1);
+   r.onupgradeneeded=()=>r.result.createObjectStore('k');
+   r.onerror=()=>erro(r.error);
+   r.onsuccess=()=>{
+    const tx=r.result.transaction('k',op==='get'?'readonly':'readwrite'),st=tx.objectStore('k');
+    const q=op==='get'?st.get('chave'):op==='put'?st.put(valor,'chave'):st.delete('chave');
+    q.onsuccess=()=>ok(q.result);q.onerror=()=>erro(q.error);
+   };
+  });
+ }
+ async function chavePrf(saida){
+  const base=await crypto.subtle.importKey('raw',saida,'HKDF',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'HKDF',hash:'SHA-256',salt:new Uint8Array(32),info:enc.encode('inspecoes-bio-v1')},
+   base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ }
+ async function verificar(cfg){
+  const opts={challenge:rand(32),allowCredentials:[{type:'public-key',id:unb64(cfg.id),transports:['internal','hybrid']}],
+   userVerification:'required',timeout:60000};
+  if(cfg.modo==='prf')opts.extensions={prf:{eval:{first:unb64(cfg.salt)}}};
+  const a=await navigator.credentials.get({publicKey:opts});
+  if(!a)throw Error('cancelado');
+  const ext=a.getClientExtensionResults?a.getClientExtensionResults():{};
+  return ext.prf&&ext.prf.results&&ext.prf.results.first;
+ }
+
+ async function ativar(email,senha){
+  const salt=rand(32);
+  const cred=await navigator.credentials.create({publicKey:{
+   challenge:rand(32),
+   rp:{name:'Inspeções de Resíduos'},
+   user:{id:rand(16),name:email,displayName:(typeof atual!=='undefined'&&atual&&atual.nome)||email},
+   pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
+   authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'preferred'},
+   attestation:'none',timeout:60000,
+   extensions:{prf:{eval:{first:salt}}}
+  }});
+  if(!cred)throw Error('cancelado');
+  const cfg={id:b64(cred.rawId),salt:b64(salt),email,modo:'local'};
+  const ext=cred.getClientExtensionResults?cred.getClientExtensionResults():{};
+  let saida=ext.prf&&ext.prf.results&&ext.prf.results.first;
+  if(!saida&&ext.prf&&ext.prf.enabled){cfg.modo='prf';try{saida=await verificar(cfg)}catch(_){saida=null}}
+  let chave;
+  if(saida){cfg.modo='prf';chave=await chavePrf(saida);}
+  else{cfg.modo='local';chave=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);await idb('put',chave);}
+  const iv=rand(12);
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},chave,enc.encode(JSON.stringify({email,senha})));
+  cfg.iv=b64(iv);cfg.ct=b64(ct);
+  localStorage.setItem(BIO_KEY,JSON.stringify(cfg));
+  try{localStorage.removeItem(BIO_NAO)}catch(_){}
+ }
+
+ function erroWebAuthn(e){
+  if(e&&(e.name==='NotAllowedError'||e.name==='AbortError'||e.message==='cancelado'))return 'Biometria cancelada ou não reconhecida.';
+  if(e&&e.name==='InvalidStateError')return 'Este aparelho já tem uma biometria registrada para o app. Tente novamente.';
+  return 'Não foi possível usar a biometria neste aparelho.';
+ }
+
+ /* ---- Tela de login ---- */
+ window.bioAtualizarTela=async function(){
+  const btn=$('authBioBtn');if(!btn)return;
+  const cfg=ler();
+  const ok=cfg&&await suportado();
+  btn.style.display=ok?'':'none';
+  if(ok){
+   if(!aLogin.value)aLogin.value=cfg.email;
+   authBtn.className='secondary';authBtn.textContent='Entrar com senha';
+   btn.className='primary bio-btn';
+  }else{authBtn.className='primary';authBtn.textContent='Entrar';btn.className='secondary bio-btn';}
+ };
+ window.entrarComBiometria=async function(){
+  const cfg=ler();if(!cfg)return bioAtualizarTela();
+  const btn=$('authBioBtn');if(btn.disabled)return;
+  btn.disabled=true;authErro.textContent='';
+  try{
+   const saida=await verificar(cfg);
+   let chave;
+   if(cfg.modo==='prf'){if(!saida)throw Error('prf');chave=await chavePrf(saida);}
+   else{chave=await idb('get');if(!chave)throw Error('sem-chave');}
+   const txt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(cfg.iv)},chave,unb64(cfg.ct));
+   const dados=JSON.parse(dec.decode(txt));
+   aLogin.value=dados.email;aSenha.value=dados.senha;
+   viaBio=true;
+   await enviarAuth();
+   viaBio=false;aSenha.value='';
+  }catch(e){
+   if(e&&(e.message==='prf'||e.message==='sem-chave'||e.name==='OperationError')){
+    limpar();bioAtualizarTela();authErro.textContent='A biometria deste aparelho precisa ser ativada de novo. Entre com sua senha.';
+   }else authErro.textContent=erroWebAuthn(e);
+  }finally{btn.disabled=false;}
+ };
+ window.bioGuardarPendente=function(email,senha){pendente=viaBio?null:{email,senha};};
+ window.bioFalhaLogin=function(e){
+  if(viaBio&&/invalid-credential|wrong-password|user-not-found|invalid-login/.test((e&&e.code)||'')){
+   limpar();bioAtualizarTela();
+   authErro.textContent='Sua senha foi alterada. Entre com a nova senha para reativar a biometria.';
+  }
+  viaBio=false;pendente=null;
+ };
+
+ /* ---- Depois do login ---- */
+ window.bioAposLogin=async function(u){
+  const p=pendente;pendente=null;viaBio=false;
+  const temSuporte=await suportado();
+  const mb=$('btnMenuBio');if(mb)mb.style.display=temSuporte?'':'none';
+  if(!p||!temSuporte)return;
+  const cfg=ler();
+  if(cfg&&cfg.email===p.email)return;
+  if(localStorage.getItem(BIO_NAO)===p.email)return;
+  abrirModal('oferta',p);
+ };
+ window.bioSenhaAlterada=async function(email,senha){
+  const cfg=ler();
+  if(!cfg||cfg.email!==email||!await suportado())return;
+  limpar();
+  abrirModal('reativar',{email,senha});
+ };
+
+ /* ---- Modal ---- */
+ let dadosModal=null;
+ function abrirModal(modo,dados){
+  modoModal=modo;dadosModal=dados||null;
+  const cfg=ler(), email=(dados&&dados.email)||(cloudAuth&&cloudAuth.currentUser&&cloudAuth.currentUser.email)||'';
+  $('bioErro').textContent='';$('bioSenha').value='';
+  $('bioBtnNunca').style.display=modo==='oferta'?'':'none';
+  $('bioSenhaBox').style.display='none';
+  if(modo==='desativar'){
+   $('bioTitulo').textContent='Biometria ativada';
+   $('bioTexto').textContent='Neste aparelho você entra no app com a digital ou o reconhecimento facial'+(cfg?' ('+cfg.email+')':'')+'.';
+   $('bioBtnOk').textContent='Desativar biometria';$('bioBtnOk').className='danger';
+  }else{
+   $('bioTitulo').textContent=modo==='reativar'?'Reativar a biometria?':'Entrar com biometria?';
+   $('bioTexto').textContent=(modo==='reativar'?'Sua senha mudou. ':'')+'Use a digital ou o reconhecimento facial deste aparelho para entrar sem digitar a senha.';
+   $('bioBtnOk').textContent='Ativar';$('bioBtnOk').className='primary';
+   if(!dados||!dados.senha)$('bioSenhaBox').style.display='';
+  }
+  $('modalBio').dataset.email=email;
+  $('modalBio').classList.add('show');
+ }
+ window.bioFechar=function(){$('modalBio').classList.remove('show');dadosModal=null;};
+ window.bioNuncaPerguntar=function(){
+  const email=$('modalBio').dataset.email;if(email)localStorage.setItem(BIO_NAO,email);bioFechar();
+ };
+ window.abrirBiometria=async function(){
+  if(!await suportado())return alert('Este aparelho não oferece biometria para o app.');
+  const cfg=ler(), email=cloudAuth&&cloudAuth.currentUser&&cloudAuth.currentUser.email;
+  abrirModal(cfg&&cfg.email===email?'desativar':'menu',{email});
+ };
+ window.bioConfirmar=async function(){
+  const btn=$('bioBtnOk');if(btn.disabled)return;
+  if(modoModal==='desativar'){limpar();bioFechar();alert('Biometria desativada neste aparelho.');return;}
+  btn.disabled=true;$('bioErro').textContent='';
+  try{
+   let email=(dadosModal&&dadosModal.email)||$('modalBio').dataset.email, senha=dadosModal&&dadosModal.senha;
+   if(!senha){
+    senha=$('bioSenha').value;
+    if(!senha)throw {msg:'Digite sua senha.'};
+    const u=cloudAuth.currentUser;
+    try{await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email,senha));}
+    catch(e){throw {msg:mensagemCloud(e)}}
+    email=u.email;
+   }
+   await ativar(email,senha);
+   bioFechar();alert('Pronto! Na próxima vez, toque em "Entrar com biometria".');
+  }catch(e){$('bioErro').textContent=e&&e.msg?e.msg:erroWebAuthn(e);}
+  finally{btn.disabled=false;}
+ };
+
+ bioAtualizarTela();
 })();
 </script>
 </body>
